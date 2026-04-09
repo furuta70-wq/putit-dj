@@ -2,1289 +2,903 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#101114">
-<title>QUICK DJ Sampler</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1114">
+<title>QUICK DJ</title>
 <style>
-  :root {
-    --bg: #101114;
-    --panel: #17191e;
-    --panel-2: #1d2027;
-    --line: rgba(255,255,255,.08);
-    --text: #f4f4f6;
-    --muted: rgba(255,255,255,.58);
-    --soft: rgba(255,255,255,.12);
-    --accent: #d83b3b;
-    --accent-soft: rgba(216,59,59,.24);
-    --key-white-top: #fcfcfc;
-    --key-white-bottom: #d9dbe0;
-    --key-black-top: #343842;
-    --key-black-bottom: #111319;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-right: env(safe-area-inset-right, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-left: env(safe-area-inset-left, 0px);
-  }
-
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 30% 20%, rgba(255,255,255,.035), transparent 26%),
-      radial-gradient(circle at 70% 75%, rgba(255,255,255,.025), transparent 24%),
-      linear-gradient(180deg, #13151a, #0f1115 55%, #0b0d11);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
-    touch-action: manipulation;
-  }
-
-  #app {
-    width: 100vw;
-    height: 100vh;
-    padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  #top {
-    flex: 0 0 70%;
-    min-height: 0;
-    display: grid;
-    grid-template-columns: 62fr 38fr;
-    gap: 10px;
-  }
-
-  #disc-area, #control-area, #piano-area {
-    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 12px 30px rgba(0,0,0,.25);
-  }
-
-  #disc-area {
-    position: relative;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .disc-wrap {
-    position: relative;
-    width: min(88%, calc(100% - 24px));
-    height: min(88%, calc(100% - 24px));
-    aspect-ratio: 1 / 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
-    user-select: none;
-  }
-
-  #disc {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    position: relative;
-    background-color: #0b0c10;
-    background-image: url("https://lh3.googleusercontent.com/d/11t6JbUXtU0C7Orlgx3Jbo_UYZq8JZW2u");
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,.06),
-      inset 0 0 36px rgba(0,0,0,.35),
-      0 24px 44px rgba(0,0,0,.45);
-    transform: rotate(0deg);
-    will-change: transform;
-    overflow: hidden;
-  }
-
-  #disc::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background:
-      radial-gradient(circle at 50% 50%, transparent 0 7%, rgba(255,255,255,.035) 8%, transparent 10%),
-      radial-gradient(circle at 50% 50%, transparent 0 38%, rgba(255,255,255,.022) 38.4%, transparent 39.4%),
-      radial-gradient(circle at 50% 50%, transparent 0 58%, rgba(255,255,255,.018) 58.3%, transparent 59.1%),
-      radial-gradient(circle at 28% 20%, rgba(255,255,255,.2), transparent 15%),
-      radial-gradient(circle at 72% 75%, rgba(255,255,255,.09), transparent 14%);
-    mix-blend-mode: screen;
-    pointer-events: none;
-  }
-
-  #disc::after {
-    content: "";
-    position: absolute;
-    left: 50%; top: 50%;
-    width: 4%; height: 4%;
-    min-width: 12px; min-height: 12px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #444, #131313 65%);
-    box-shadow: 0 0 0 2px rgba(255,255,255,.12), 0 0 0 6px rgba(0,0,0,.28);
-  }
-
-  .disc-halo {
-    position: absolute;
-    inset: -1.5%;
-    border-radius: 50%;
-    box-shadow: 0 0 0 1px rgba(255,255,255,.03), 0 0 50px rgba(255,255,255,.025);
-    pointer-events: none;
-  }
-
-  .disc-overlay {
-    position: absolute;
-    left: 14px;
-    right: 14px;
-    bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    pointer-events: none;
-  }
-
-  .status-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 34px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: rgba(0,0,0,.42);
-    border: 1px solid rgba(255,255,255,.08);
-    color: var(--text);
-    font-size: clamp(12px, 1.6vh, 16px);
-    letter-spacing: .04em;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    white-space: nowrap;
-  }
-
-  .tiny-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: rgba(255,255,255,.3);
-    box-shadow: 0 0 0 0 rgba(255,255,255,0);
-  }
-
-  .tiny-dot.ready { background: #7ee085; }
-  .tiny-dot.empty { background: rgba(255,255,255,.28); }
-  .tiny-dot.rec {
-    background: #ff4b4b;
-    animation: pulseDot 1s infinite;
-    box-shadow: 0 0 0 0 rgba(255,75,75,.42);
-  }
-
-  @keyframes pulseDot {
-    0% { box-shadow: 0 0 0 0 rgba(255,75,75,.44); }
-    70% { box-shadow: 0 0 0 10px rgba(255,75,75,0); }
-    100% { box-shadow: 0 0 0 0 rgba(255,75,75,0); }
-  }
-
-  #control-area {
-    min-width: 0;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .panel-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-height: 34px;
-    color: rgba(255,255,255,.9);
-    font-size: clamp(11px, 1.6vh, 16px);
-    letter-spacing: .16em;
-    text-transform: uppercase;
-  }
-
-  .mini-badge {
-    color: var(--muted);
-    font-size: clamp(10px, 1.25vh, 13px);
-    letter-spacing: .08em;
-  }
-
-  .button-col {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .action-btn {
-    appearance: none;
-    border: 1px solid rgba(255,255,255,.09);
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
-    color: var(--text);
-    min-height: clamp(48px, 8vh, 64px);
-    padding: 0 16px;
-    font-size: clamp(14px, 2.2vh, 20px);
-    letter-spacing: .06em;
-    font-weight: 650;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 8px 20px rgba(0,0,0,.18);
-  }
-
-  .action-btn:active { transform: translateY(1px) scale(.995); }
-  .action-btn[disabled] { opacity: .45; }
-  .action-btn.rec {
-    border-color: rgba(255,75,75,.62);
-    background: linear-gradient(180deg, rgba(255,75,75,.22), rgba(255,75,75,.12));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(255,75,75,.06), 0 16px 26px rgba(120,10,10,.25);
-  }
-
-  .fx-grid {
-    margin-top: 2px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    min-height: 0;
-  }
-
-  .fx-card {
-    min-width: 0;
-    padding: 10px 8px 8px;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .fx-label {
-    color: rgba(255,255,255,.92);
-    font-size: clamp(11px, 1.5vh, 15px);
-    letter-spacing: .13em;
-  }
-
-  .knob {
-    width: clamp(58px, 10vh, 90px);
-    height: clamp(58px, 10vh, 90px);
-    border-radius: 50%;
-    position: relative;
-    background:
-      radial-gradient(circle at 35% 30%, rgba(255,255,255,.18), rgba(255,255,255,0) 24%),
-      radial-gradient(circle at 50% 50%, #2c3139 0 45%, #1a1d23 60%, #0e1015 76%, #2b3038 78%, #090b0f 100%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.1), inset 0 -6px 14px rgba(0,0,0,.32), 0 10px 18px rgba(0,0,0,.24);
-    touch-action: none;
-  }
-
-  .knob::before {
-    content: "";
-    position: absolute;
-    inset: 10%;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.05);
-  }
-
-  .knob-indicator {
-    position: absolute;
-    left: 50%; top: 50%;
-    width: 38%;
-    height: 3px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.92));
-    transform-origin: 0% 50%;
-    transform: rotate(-135deg);
-    box-shadow: 0 0 8px rgba(255,255,255,.18);
-  }
-
-  .fx-value {
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    font-size: clamp(11px, 1.35vh, 14px);
-  }
-
-  .hint {
-    margin-top: auto;
-    padding: 10px 12px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,.06);
-    background: rgba(255,255,255,.025);
-    color: var(--muted);
-    font-size: clamp(11px, 1.3vh, 14px);
-    line-height: 1.4;
-  }
-
-  #piano-area {
-    position: relative;
-    min-height: 0;
-    overflow: hidden;
-    padding: 12px;
-  }
-
-  .piano-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 28px;
-    margin-bottom: 8px;
-  }
-
-  .piano-wrap {
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    top: 46px;
-    bottom: 12px;
-  }
-
-  .white-keys {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-  }
-
-  .white-key, .black-key {
-    position: relative;
-    border: 0;
-    outline: 0;
-    padding: 0;
-    user-select: none;
-    touch-action: none;
-  }
-
-  .white-key {
-    border-radius: 0 0 14px 14px;
-    background: linear-gradient(180deg, var(--key-white-top), var(--key-white-bottom));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -8px 16px rgba(0,0,0,.08), 0 6px 10px rgba(0,0,0,.12);
-  }
-
-  .white-key.active {
-    background: linear-gradient(180deg, #eceef2, #c7cbd3);
-    box-shadow: inset 0 3px 9px rgba(0,0,0,.12), 0 2px 4px rgba(0,0,0,.12);
-    transform: translateY(1px);
-  }
-
-  .black-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 62%;
-    pointer-events: none;
-  }
-
-  .black-key {
-    width: 9.4%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    border-radius: 0 0 10px 10px;
-    background: linear-gradient(180deg, var(--key-black-top), var(--key-black-bottom));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.09), inset 0 -6px 14px rgba(0,0,0,.4), 0 6px 10px rgba(0,0,0,.24);
-    pointer-events: auto;
-  }
-
-  .black-key.active {
-    background: linear-gradient(180deg, #2a2e36, #090b10);
-    box-shadow: inset 0 2px 7px rgba(0,0,0,.36), 0 2px 5px rgba(0,0,0,.22);
-    transform: translateY(1px);
-  }
-
-  .key-label {
-    position: absolute;
-    left: 50%;
-    bottom: 10px;
-    transform: translateX(-50%);
-    color: rgba(0,0,0,.4);
-    font-size: clamp(11px, 1.3vh, 14px);
-    font-weight: 700;
-    letter-spacing: .04em;
-    pointer-events: none;
-  }
-
-  .black-key .key-label {
-    color: rgba(255,255,255,.55);
-    bottom: 8px;
-  }
-
-  #overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(7,8,11,.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    padding: 18px;
-  }
-
-  .overlay-card {
-    width: min(92vw, 640px);
-    padding: 24px 20px;
-    border-radius: 24px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
-    box-shadow: 0 30px 60px rgba(0,0,0,.38);
-  }
-
-  .overlay-title {
-    font-size: clamp(22px, 4vw, 34px);
-    font-weight: 760;
-    letter-spacing: .06em;
-    margin-bottom: 10px;
-  }
-
-  .overlay-text {
-    color: rgba(255,255,255,.75);
-    line-height: 1.65;
-    font-size: clamp(13px, 2vh, 18px);
-  }
-
-  .overlay-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-    flex-wrap: wrap;
-  }
-
-  .overlay-btn {
-    appearance: none;
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
-    color: var(--text);
-    min-height: 52px;
-    padding: 0 18px;
-    font-size: clamp(14px, 2vh, 18px);
-    font-weight: 700;
-  }
-
-  .overlay-btn.primary {
-    background: linear-gradient(180deg, rgba(255,75,75,.28), rgba(255,75,75,.16));
-    border-color: rgba(255,75,75,.36);
-  }
-
-  #toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(14px + var(--safe-bottom));
-    transform: translateX(-50%) translateY(18px);
-    min-width: 220px;
-    max-width: min(92vw, 560px);
-    padding: 12px 16px;
-    border-radius: 999px;
-    background: rgba(0,0,0,.62);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,.09);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .2s ease, transform .2s ease;
-    z-index: 110;
-    font-size: clamp(12px, 1.5vh, 15px);
-    text-align: center;
-  }
-
-  #toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  .hidden { display: none !important; }
-
-  @media (orientation: portrait) {
-    #app { gap: 8px; }
-    #top { grid-template-columns: 1fr; grid-template-rows: 56% 44%; }
-    #control-area { gap: 10px; }
-    #piano-area { min-height: 34vh; }
-    .hint { display: none; }
-  }
-
-  @media (max-width: 980px) {
-    #top { grid-template-columns: 60fr 40fr; }
-    .action-btn { min-height: 46px; }
-    .fx-grid { gap: 8px; }
-  }
+:root {
+  --bg: #0f1114;
+  --panel: #171a1f;
+  --panel-2: #1b1f25;
+  --line: rgba(255,255,255,0.08);
+  --text: #f2f3f5;
+  --muted: #9ca3af;
+  --accent: #d84a4a;
+  --ok: #7ee2a5;
+  --radius: 22px;
+  --shadow: 0 12px 34px rgba(0,0,0,0.32);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 10%, #1b1f26 0%, #101317 52%, #090b0d 100%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+body { touch-action: manipulation; }
+button { font: inherit; color: inherit; }
+#app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding:
+    max(8px, env(safe-area-inset-top))
+    max(8px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom))
+    max(8px, env(safe-area-inset-left));
+}
+.panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+#top {
+  height: 70%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 62fr 38fr;
+  gap: 8px;
+}
+#disc-area {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #1b1f24 0%, #12151a 58%, #0d0f13 100%);
+}
+.disc-wrap {
+  width: min(90%, calc(100vh * 0.58));
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-image: url("https://lh3.googleusercontent.com/d/11t6JbUXtU0C7Orlgx3Jbo_UYZq8JZW2u");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  touch-action: none;
+  user-select: none;
+  transform: rotate(0deg);
+}
+#disc-status, #disc-play-state, #piano-status {
+  position: absolute;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.38);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: clamp(11px, 1.55vh, 15px);
+  letter-spacing: .08em;
+  backdrop-filter: blur(8px);
+}
+#disc-status { left: 14px; bottom: 12px; }
+#disc-play-state { right: 14px; bottom: 12px; }
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  vertical-align: middle;
+}
+.status-dot.ok { background: var(--ok); }
+.status-dot.rec { background: var(--accent); box-shadow: 0 0 10px rgba(216,74,74,.55); }
+#control-area {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+  padding: 12px;
+}
+#brand {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 8px 10px 0;
+}
+#title {
+  font-size: clamp(15px, 2.2vh, 24px);
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+#subtitle {
+  font-size: clamp(10px, 1.4vh, 14px);
+  color: var(--muted);
+  letter-spacing: .08em;
+}
+#control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-content: start;
+}
+.control-btn {
+  min-height: clamp(58px, 11vh, 84px);
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(180deg, #242933, #191d24);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 22px rgba(0,0,0,0.24);
+  font-size: clamp(15px, 2vh, 22px);
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.control-btn:active { transform: translateY(1px) scale(.995); }
+.control-btn.recording {
+  background: linear-gradient(180deg, #a83535, #771f1f);
+  border-color: rgba(255,140,140,0.35);
+}
+.control-btn.playing {
+  background: linear-gradient(180deg, #2b6bd7, #1f4da0);
+}
+.control-btn:disabled {
+  opacity: .55;
+}
+#control-note {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--muted);
+  font-size: clamp(11px, 1.45vh, 14px);
+  line-height: 1.5;
+}
+#piano-area {
+  height: 30%;
+  min-height: 0;
+  position: relative;
+  padding: 8px 10px 10px;
+  background: linear-gradient(180deg, #171a1f, #101317);
+}
+#piano-head {
+  height: 12%;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}
+#piano-status {
+  position: static;
+  padding: 6px 10px;
+  font-size: clamp(10px, 1.35vh, 14px);
+}
+#piano-label {
+  color: var(--muted);
+  font-size: clamp(10px, 1.3vh, 13px);
+  letter-spacing: .08em;
+}
+#keys {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: calc(12% + 8px);
+  bottom: 10px;
+  border-radius: 16px;
+  overflow: visible;
+}
+#white-keys {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.white-key {
+  border-radius: 0 0 12px 12px;
+  border: 1px solid rgba(0,0,0,0.18);
+  background: linear-gradient(180deg, #ffffff 0%, #f3f3f3 48%, #dfdfdf 100%);
+  box-shadow: inset 0 -10px 14px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.78);
+  touch-action: none;
+  user-select: none;
+}
+.white-key.active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #f7f7f7 0%, #ececec 46%, #d5d5d5 100%);
+}
+#black-layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 62%;
+  pointer-events: none;
+}
+.black-key {
+  position: absolute;
+  width: 9.6%;
+  height: 100%;
+  border-radius: 0 0 10px 10px;
+  background: linear-gradient(180deg, #333842 0%, #181c22 74%, #101318 100%);
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: inset 0 -8px 12px rgba(0,0,0,0.34), 0 6px 12px rgba(0,0,0,0.2);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+.black-key.active {
+  transform: translateY(1px);
+  background: linear-gradient(180deg, #2b3038 0%, #12161b 78%, #0c0f12 100%);
+}
+.black-key[data-note="1"]  { left: calc((100% / 7) * 1 - 4.8%); }
+.black-key[data-note="3"]  { left: calc((100% / 7) * 2 - 4.8%); }
+.black-key[data-note="6"]  { left: calc((100% / 7) * 4 - 4.8%); }
+.black-key[data-note="8"]  { left: calc((100% / 7) * 5 - 4.8%); }
+.black-key[data-note="10"] { left: calc((100% / 7) * 6 - 4.8%); }
+#startup-overlay, #landscape-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5,7,9,0.86);
+  backdrop-filter: blur(10px);
+  padding: 24px;
+  z-index: 100;
+}
+.overlay-card {
+  width: min(520px, 92vw);
+  background: linear-gradient(180deg, #1a1f26, #12161b);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.4);
+}
+.overlay-title {
+  font-size: clamp(18px, 3vh, 28px);
+  font-weight: 700;
+  letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+.overlay-text {
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: clamp(13px, 1.8vh, 17px);
+}
+.primary-btn {
+  margin-top: 16px;
+  width: 100%;
+  min-height: 56px;
+  border-radius: 18px;
+  border: none;
+  background: linear-gradient(180deg, #2d7ef0, #1e5dbe);
+  color: white;
+  font-weight: 700;
+  font-size: clamp(15px, 2vh, 19px);
+  letter-spacing: .08em;
+}
+.small-note {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: clamp(11px, 1.45vh, 14px);
+}
+#error-banner {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  translate: -50% 0;
+  max-width: calc(100vw - 20px);
+  z-index: 90;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(150, 28, 28, 0.94);
+  color: white;
+  font-size: clamp(12px, 1.7vh, 15px);
+  box-shadow: 0 10px 26px rgba(0,0,0,.3);
+  display: none;
+}
+.hidden { display: none !important; }
+@media (orientation: portrait) {
+  #app { display: none; }
+  #landscape-overlay { display: flex; }
+}
+@media (orientation: landscape) {
+  #landscape-overlay { display: none; }
+}
 </style>
 </head>
 <body>
-<div id="overlay">
+<div id="error-banner"></div>
+<div id="startup-overlay">
   <div class="overlay-card">
     <div class="overlay-title">QUICK DJ</div>
     <div class="overlay-text">
-      最初にタップして、音声とマイクを有効にします。<br>
-      DISC REC はレコード用、PIANO REC は鍵盤用です。録音はどちらも最大3秒です。<br>
-      マイクは HTTPS または localhost などの secure context でのみ利用できます。citeturn841279search0turn841279search2
+      最初に一度だけタップして、音声とマイクを有効にします。<br>
+      DISC と PIANO は別々に最大3秒録音できます。<br>
+      iPhone / iPad / Android では HTTPS または localhost で開いてください。
     </div>
-    <div class="overlay-actions">
-      <button class="overlay-btn primary" id="btn-start">開始</button>
-      <button class="overlay-btn" id="btn-close-overlay">閉じる</button>
-    </div>
+    <button id="btn-start" class="primary-btn">開始してマイクを有効化</button>
+    <div class="small-note">開始時にマイク許可を取るので、そのあと録音が安定しやすくなります。</div>
   </div>
 </div>
-
+<div id="landscape-overlay" class="hidden">
+  <div class="overlay-card">
+    <div class="overlay-title">横向きで使ってください</div>
+    <div class="overlay-text">このサンプラーはスマホ横向き、タブレット横向き用です。</div>
+  </div>
+</div>
 <div id="app">
   <section id="top">
-    <section id="disc-area">
-      <div class="disc-wrap" id="disc-wrap">
-        <div id="disc"></div>
-        <div class="disc-halo"></div>
+    <section id="disc-area" class="panel">
+      <div class="disc-wrap">
+        <div id="disc" aria-label="DISCターンテーブル"></div>
       </div>
-      <div class="disc-overlay">
-        <div class="status-chip" id="disc-status-chip"><span class="tiny-dot empty" id="disc-dot"></span><span id="disc-status">DISC EMPTY</span></div>
-        <div class="status-chip" id="app-state-chip"><span id="engine-status">AUDIO OFF</span></div>
-      </div>
+      <div id="disc-status"><span id="disc-dot" class="status-dot"></span><span id="disc-status-text">DISC EMPTY</span></div>
+      <div id="disc-play-state">STOPPED</div>
     </section>
-
-    <aside id="control-area">
-      <div class="panel-title">
-        <span>Control</span>
-        <span class="mini-badge" id="mic-badge">MIC IDLE</span>
+    <aside id="control-area" class="panel">
+      <div id="brand">
+        <div id="title">QUICK DJ</div>
+        <div id="subtitle">REC 3s</div>
       </div>
-
-      <div class="button-col">
-        <button class="action-btn" id="btn-disc-rec">DISC REC</button>
-        <button class="action-btn" id="btn-piano-rec">PIANO REC</button>
-      </div>
-
-      <div class="fx-grid">
-        <div class="fx-card">
-          <div class="fx-label">FILTER</div>
-          <div class="knob" id="filter-knob" data-param="filter" aria-label="FILTER" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58" tabindex="0">
-            <div class="knob-indicator" id="filter-indicator"></div>
-          </div>
-          <div class="fx-value" id="filter-value">58%</div>
+      <div>
+        <div id="control-grid">
+          <button id="btn-disc-rec" class="control-btn">DISC REC</button>
+          <button id="btn-piano-rec" class="control-btn">PIANO REC</button>
+          <button id="btn-disc-play" class="control-btn">DISC PLAY</button>
+          <button id="btn-disc-stop" class="control-btn">DISC STOP</button>
         </div>
-        <div class="fx-card">
-          <div class="fx-label">SPACE</div>
-          <div class="knob" id="space-knob" data-param="space" aria-label="SPACE" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="18" tabindex="0">
-            <div class="knob-indicator" id="space-indicator"></div>
-          </div>
-          <div class="fx-value" id="space-value">18%</div>
+        <div id="control-note">
+          DISC は録音後にループ再生できます。再生中はレコードが回転します。<br>
+          レコードを指で円をなぞるように動かすとスクラッチします。<br>
+          PIANO は別録音した音を1オクターブ鍵盤で鳴らします。
         </div>
-      </div>
-
-      <div class="hint">
-        レコードは左右ドラッグでスクラッチ。鍵盤は別録音した音を1オクターブで鳴らします。<br>
-        最初の音出し前に AudioContext をユーザー操作で resume すると安定しやすいです。citeturn841279search0turn841279search1
       </div>
     </aside>
   </section>
-
-  <section id="piano-area">
-    <div class="piano-head">
-      <div class="status-chip"><span class="tiny-dot empty" id="piano-dot"></span><span id="piano-status">PIANO EMPTY</span></div>
-      <div class="mini-badge">1 OCTAVE</div>
+  <section id="piano-area" class="panel">
+    <div id="piano-head">
+      <div id="piano-status"><span id="piano-dot" class="status-dot"></span><span id="piano-status-text">PIANO EMPTY</span></div>
+      <div id="piano-label">1 OCTAVE</div>
     </div>
-
-    <div class="piano-wrap" id="keys-wrap">
-      <div class="white-keys" id="white-keys"></div>
-      <div class="black-layer" id="black-layer"></div>
+    <div id="keys">
+      <div id="white-keys"></div>
+      <div id="black-layer">
+        <div class="black-key" data-note="1"></div>
+        <div class="black-key" data-note="3"></div>
+        <div class="black-key" data-note="6"></div>
+        <div class="black-key" data-note="8"></div>
+        <div class="black-key" data-note="10"></div>
+      </div>
     </div>
   </section>
 </div>
-
-<div id="toast"></div>
-
 <script>
 (() => {
-  'use strict';
-
+  const DISC_IMAGE_URL = 'https://lh3.googleusercontent.com/d/11t6JbUXtU0C7Orlgx3Jbo_UYZq8JZW2u';
   const MAX_RECORD_MS = 3000;
-  const SCRATCH_SENSITIVITY = 0.0026;
-  const SCRATCH_SLICE_SEC = 0.055;
-  const DISC_IDLE_RPM = 8;
-  const TOAST_MS = 2200;
-  const NOTE_RATES = [
-    1.000000, 1.059463, 1.122462, 1.189207, 1.259921, 1.334840,
-    1.414214, 1.498307, 1.587401, 1.681793, 1.781797, 1.887749
-  ];
-
-  const KEYBOARD = [
-    { name: 'C', type: 'white', semitone: 0 },
-    { name: 'C#', type: 'black', semitone: 1, left: 10.5 },
-    { name: 'D', type: 'white', semitone: 2 },
-    { name: 'D#', type: 'black', semitone: 3, left: 24.8 },
-    { name: 'E', type: 'white', semitone: 4 },
-    { name: 'F', type: 'white', semitone: 5 },
-    { name: 'F#', type: 'black', semitone: 6, left: 53.4 },
-    { name: 'G', type: 'white', semitone: 7 },
-    { name: 'G#', type: 'black', semitone: 8, left: 67.7 },
-    { name: 'A', type: 'white', semitone: 9 },
-    { name: 'A#', type: 'black', semitone: 10, left: 82.0 },
-    { name: 'B', type: 'white', semitone: 11 }
-  ];
-
-  const els = {
-    overlay: document.getElementById('overlay'),
-    btnStart: document.getElementById('btn-start'),
-    btnCloseOverlay: document.getElementById('btn-close-overlay'),
-    discWrap: document.getElementById('disc-wrap'),
-    disc: document.getElementById('disc'),
-    discStatus: document.getElementById('disc-status'),
-    discDot: document.getElementById('disc-dot'),
-    pianoStatus: document.getElementById('piano-status'),
-    pianoDot: document.getElementById('piano-dot'),
-    btnDiscRec: document.getElementById('btn-disc-rec'),
-    btnPianoRec: document.getElementById('btn-piano-rec'),
-    filterKnob: document.getElementById('filter-knob'),
-    spaceKnob: document.getElementById('space-knob'),
-    filterIndicator: document.getElementById('filter-indicator'),
-    spaceIndicator: document.getElementById('space-indicator'),
-    filterValue: document.getElementById('filter-value'),
-    spaceValue: document.getElementById('space-value'),
-    engineStatus: document.getElementById('engine-status'),
-    micBadge: document.getElementById('mic-badge'),
-    whiteKeys: document.getElementById('white-keys'),
-    blackLayer: document.getElementById('black-layer'),
-    toast: document.getElementById('toast')
-  };
+  const ROTATION_DEG_PER_SEC = 30;
+  const SCRATCH_SLICE_SEC = 0.06;
+  const SCRATCH_GAIN = 0.95;
+  const SCRATCH_ANGLE_TO_SEC = 0.0028;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 
   const state = {
     audioCtx: null,
-    inputStream: null,
-    mediaSource: null,
-    processor: null,
-    zeroGain: null,
-
-    masterGain: null,
-    discGain: null,
-    pianoGain: null,
-    filterNode: null,
-    convolver: null,
-    wetGain: null,
-    dryGain: null,
-
-    initialized: false,
-    started: false,
-    micReady: false,
-
-    recordingTarget: null,
-    recordStartMs: 0,
-    recordStopTimer: null,
-    recordMeterRaf: 0,
-    recordedChunks: [],
-    inputSampleRate: 44100,
-
+    enabled: false,
+    mediaStream: null,
+    mediaRecorder: null,
+    recordChunks: [],
+    activeTarget: null,
+    recordStopAt: 0,
+    recordTimer: null,
     discBuffer: null,
     pianoBuffer: null,
-
     discScrubPos: 0,
-    discLastX: 0,
-    discLastTime: 0,
-    discTouching: false,
-    discShotCooldown: 0,
-    discActiveSource: null,
-
-    noteSources: new Map(),
-    activeKeyIds: new Map(),
-
-    filterValue: 0.58,
-    spaceValue: 0.18,
-
-    discRotation: 0,
-    discDragRotation: 0,
-    spinRAF: 0,
-
-    pointerCaptureId: null,
-    toastTimer: 0
+    discRotationDeg: 0,
+    isDiscPlaying: false,
+    discLoopSource: null,
+    discLoopGain: null,
+    discLoopStartedAt: 0,
+    discLoopStartOffset: 0,
+    discDragging: false,
+    discWasPlayingBeforeScratch: false,
+    lastDiscAngle: 0,
+    lastAnimTime: 0,
+    lastScratchAt: 0,
   };
 
-  function showToast(msg) {
-    clearTimeout(state.toastTimer);
-    els.toast.textContent = msg;
-    els.toast.classList.add('show');
-    state.toastTimer = window.setTimeout(() => {
-      els.toast.classList.remove('show');
-    }, TOAST_MS);
+  const WHITE_NOTE_ORDER = [0, 2, 4, 5, 7, 9, 11];
+  const SEMITONE_RATES = Array.from({ length: 12 }, (_, i) => Math.pow(2, i / 12));
+
+  const el = {
+    startupOverlay: document.getElementById('startup-overlay'),
+    btnStart: document.getElementById('btn-start'),
+    errorBanner: document.getElementById('error-banner'),
+    disc: document.getElementById('disc'),
+    discDot: document.getElementById('disc-dot'),
+    discStatusText: document.getElementById('disc-status-text'),
+    discPlayState: document.getElementById('disc-play-state'),
+    pianoDot: document.getElementById('piano-dot'),
+    pianoStatusText: document.getElementById('piano-status-text'),
+    btnDiscRec: document.getElementById('btn-disc-rec'),
+    btnPianoRec: document.getElementById('btn-piano-rec'),
+    btnDiscPlay: document.getElementById('btn-disc-play'),
+    btnDiscStop: document.getElementById('btn-disc-stop'),
+    whiteKeys: document.getElementById('white-keys'),
+  };
+
+  function showError(msg, persistent = false) {
+    el.errorBanner.textContent = msg;
+    el.errorBanner.style.display = 'block';
+    if (!persistent) {
+      clearTimeout(showError._timer);
+      showError._timer = setTimeout(() => {
+        el.errorBanner.style.display = 'none';
+      }, 3400);
+    }
+  }
+
+  function isSecureEnough() {
+    return window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   }
 
   function clamp(v, min, max) {
     return Math.min(max, Math.max(min, v));
   }
 
-  function setDot(el, mode) {
-    el.className = 'tiny-dot ' + mode;
-  }
-
-  function formatRemain(ms) {
-    return (Math.max(0, ms) / 1000).toFixed(1);
-  }
-
-  function renderStatus() {
-    if (state.recordingTarget === 'disc') {
-      const remain = MAX_RECORD_MS - (performance.now() - state.recordStartMs);
-      els.discStatus.textContent = `DISC REC ${formatRemain(remain)}`;
-      setDot(els.discDot, 'rec');
-    } else {
-      els.discStatus.textContent = state.discBuffer ? 'DISC READY' : 'DISC EMPTY';
-      setDot(els.discDot, state.discBuffer ? 'ready' : 'empty');
+  async function ensureAudio() {
+    if (!AudioContextClass) throw new Error('このブラウザは Web Audio API に対応していません。');
+    if (!state.audioCtx) {
+      state.audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
     }
-
-    if (state.recordingTarget === 'piano') {
-      const remain = MAX_RECORD_MS - (performance.now() - state.recordStartMs);
-      els.pianoStatus.textContent = `PIANO REC ${formatRemain(remain)}`;
-      setDot(els.pianoDot, 'rec');
-    } else {
-      els.pianoStatus.textContent = state.pianoBuffer ? 'PIANO READY' : 'PIANO EMPTY';
-      setDot(els.pianoDot, state.pianoBuffer ? 'ready' : 'empty');
+    if (state.audioCtx.state === 'suspended') {
+      await state.audioCtx.resume();
     }
-
-    els.btnDiscRec.classList.toggle('rec', state.recordingTarget === 'disc');
-    els.btnPianoRec.classList.toggle('rec', state.recordingTarget === 'piano');
-    els.btnDiscRec.disabled = state.recordingTarget === 'piano';
-    els.btnPianoRec.disabled = state.recordingTarget === 'disc';
-
-    els.engineStatus.textContent = state.started ? 'AUDIO ON' : 'AUDIO OFF';
-    els.micBadge.textContent = state.recordingTarget ? `MIC ${state.recordingTarget.toUpperCase()} REC` : (state.micReady ? 'MIC READY' : 'MIC IDLE');
   }
 
-  function startRecordMeter() {
-    cancelAnimationFrame(state.recordMeterRaf);
-    const tick = () => {
-      if (!state.recordingTarget) return;
-      renderStatus();
-      state.recordMeterRaf = requestAnimationFrame(tick);
-    };
-    tick();
-  }
-
-  function stopRecordMeter() {
-    cancelAnimationFrame(state.recordMeterRaf);
-    state.recordMeterRaf = 0;
-    renderStatus();
-  }
-
-  function buildKeyboard() {
-    const whiteNotes = KEYBOARD.filter(k => k.type === 'white');
-    whiteNotes.forEach(note => {
-      const btn = document.createElement('button');
-      btn.className = 'white-key';
-      btn.dataset.semitone = String(note.semitone);
-      btn.dataset.note = note.name;
-      btn.innerHTML = `<span class="key-label">${note.name}</span>`;
-      bindKeyEvents(btn);
-      els.whiteKeys.appendChild(btn);
-    });
-
-    KEYBOARD.filter(k => k.type === 'black').forEach(note => {
-      const btn = document.createElement('button');
-      btn.className = 'black-key';
-      btn.dataset.semitone = String(note.semitone);
-      btn.dataset.note = note.name;
-      btn.style.left = `${note.left}%`;
-      btn.innerHTML = `<span class="key-label">${note.name}</span>`;
-      bindKeyEvents(btn);
-      els.blackLayer.appendChild(btn);
-    });
-  }
-
-  function bindKeyEvents(btn) {
-    btn.addEventListener('pointerdown', onKeyDown, { passive: false });
-    btn.addEventListener('pointerup', onKeyUp, { passive: false });
-    btn.addEventListener('pointercancel', onKeyUp, { passive: false });
-    btn.addEventListener('pointerleave', onKeyLeave, { passive: false });
-  }
-
-  function ensureAudioContext() {
-    if (state.audioCtx) return state.audioCtx;
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) throw new Error('AudioContext非対応');
-    state.audioCtx = new Ctx({ latencyHint: 'interactive' });
-
-    state.masterGain = state.audioCtx.createGain();
-    state.masterGain.gain.value = 0.98;
-
-    state.discGain = state.audioCtx.createGain();
-    state.discGain.gain.value = 1.0;
-    state.pianoGain = state.audioCtx.createGain();
-    state.pianoGain.gain.value = 0.95;
-
-    state.filterNode = state.audioCtx.createBiquadFilter();
-    state.filterNode.type = 'lowpass';
-    state.filterNode.Q.value = 0.7;
-
-    state.convolver = state.audioCtx.createConvolver();
-    state.convolver.buffer = createImpulseResponse(state.audioCtx, 1.1, 2.1);
-
-    state.wetGain = state.audioCtx.createGain();
-    state.dryGain = state.audioCtx.createGain();
-
-    state.filterNode.connect(state.dryGain);
-    state.filterNode.connect(state.convolver);
-    state.convolver.connect(state.wetGain);
-    state.dryGain.connect(state.masterGain);
-    state.wetGain.connect(state.masterGain);
-    state.masterGain.connect(state.audioCtx.destination);
-
-    updateFilter(state.filterValue);
-    updateSpace(state.spaceValue);
-
-    return state.audioCtx;
-  }
-
-  async function resumeAudio() {
-    const ctx = ensureAudioContext();
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
+  async function prepareMic() {
+    if (!isSecureEnough()) throw new Error('マイクは HTTPS または localhost でのみ使えます。');
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) {
+      throw new Error('このブラウザではマイク録音が使えません。');
     }
-    state.started = true;
-    renderStatus();
-  }
-
-  async function initMic() {
-    if (state.micReady) return;
-    ensureAudioContext();
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('マイクAPI非対応');
-    }
-
-    const stream = await navigator.mediaDevices.getUserMedia({
+    if (state.mediaStream) return state.mediaStream;
+    state.mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
+        channelCount: 1,
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
-        channelCount: 1
       },
-      video: false
+      video: false,
     });
-
-    state.inputStream = stream;
-    state.mediaSource = state.audioCtx.createMediaStreamSource(stream);
-    state.inputSampleRate = state.audioCtx.sampleRate;
-
-    const processor = state.audioCtx.createScriptProcessor(2048, 1, 1);
-    const zero = state.audioCtx.createGain();
-    zero.gain.value = 0.00001;
-
-    processor.onaudioprocess = (event) => {
-      if (!state.recordingTarget) return;
-      const input = event.inputBuffer.getChannelData(0);
-      state.recordedChunks.push(new Float32Array(input));
-    };
-
-    state.mediaSource.connect(processor);
-    processor.connect(zero);
-    zero.connect(state.audioCtx.destination);
-
-    state.processor = processor;
-    state.zeroGain = zero;
-    state.micReady = true;
-    renderStatus();
+    return state.mediaStream;
   }
 
-  function createImpulseResponse(ctx, seconds, decay) {
-    const sampleRate = ctx.sampleRate;
-    const length = Math.floor(sampleRate * seconds);
-    const buffer = ctx.createBuffer(2, length, sampleRate);
-    for (let ch = 0; ch < 2; ch++) {
-      const data = buffer.getChannelData(ch);
-      for (let i = 0; i < length; i++) {
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+  function pickMimeType() {
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus'
+    ];
+    for (const type of candidates) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type)) {
+        return type;
       }
     }
-    return buffer;
+    return '';
   }
 
-  function createMonoBufferFromChunks(chunks, sampleRate) {
-    let totalLength = 0;
-    for (const chunk of chunks) totalLength += chunk.length;
-    const data = new Float32Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      data.set(chunk, offset);
-      offset += chunk.length;
-    }
+  async function blobToAudioBuffer(blob) {
+    const arrayBuffer = await blob.arrayBuffer();
+    return await state.audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  }
 
-    const maxSamples = Math.floor(sampleRate * (MAX_RECORD_MS / 1000));
-    const trimmed = data.length > maxSamples ? data.subarray(0, maxSamples) : data;
-
+  function normalizeMonoBuffer(buffer) {
+    const out = state.audioCtx.createBuffer(1, buffer.length, buffer.sampleRate);
+    const outData = out.getChannelData(0);
+    const channels = [];
+    for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
     let peak = 0;
-    for (let i = 0; i < trimmed.length; i++) {
-      const a = Math.abs(trimmed[i]);
-      if (a > peak) peak = a;
+    for (let i = 0; i < buffer.length; i++) {
+      let sum = 0;
+      for (let ch = 0; ch < channels.length; ch++) sum += channels[ch][i] || 0;
+      const v = sum / channels.length;
+      outData[i] = v;
+      peak = Math.max(peak, Math.abs(v));
     }
-    const norm = peak > 0.98 ? 0.98 / peak : 1;
-
-    const out = state.audioCtx.createBuffer(1, trimmed.length, sampleRate);
-    const ch = out.getChannelData(0);
-    for (let i = 0; i < trimmed.length; i++) {
-      ch[i] = trimmed[i] * norm;
+    const gain = peak > 0 ? Math.min(1.7, 0.9 / peak) : 1;
+    if (gain !== 1) {
+      for (let i = 0; i < outData.length; i++) outData[i] *= gain;
     }
     return out;
   }
 
-  async function startRecording(target) {
-    await resumeAudio();
-    await initMic();
-
-    if (state.recordingTarget) {
-      return;
+  function stopDiscLoop() {
+    if (state.discLoopSource) {
+      try { state.discLoopSource.stop(); } catch {}
+      try { state.discLoopSource.disconnect(); } catch {}
+      state.discLoopSource = null;
     }
-
-    state.recordingTarget = target;
-    state.recordedChunks = [];
-    state.recordStartMs = performance.now();
-    renderStatus();
-    startRecordMeter();
-
-    clearTimeout(state.recordStopTimer);
-    state.recordStopTimer = setTimeout(() => stopRecording(target), MAX_RECORD_MS + 20);
+    if (state.discLoopGain) {
+      try { state.discLoopGain.disconnect(); } catch {}
+      state.discLoopGain = null;
+    }
+    state.isDiscPlaying = false;
   }
 
-  async function stopRecording(expectedTarget = null) {
-    if (!state.recordingTarget) return;
-    if (expectedTarget && state.recordingTarget !== expectedTarget) return;
-
-    const target = state.recordingTarget;
-    state.recordingTarget = null;
-    clearTimeout(state.recordStopTimer);
-    stopRecordMeter();
-
-    if (!state.recordedChunks.length) {
-      showToast('録音データが取れませんでした');
-      return;
-    }
-
-    const buffer = createMonoBufferFromChunks(state.recordedChunks, state.inputSampleRate);
-
-    if (target === 'disc') {
-      state.discBuffer = buffer;
-      state.discScrubPos = 0;
-      showToast('DISC用サンプルを録音しました');
-    } else if (target === 'piano') {
-      state.pianoBuffer = buffer;
-      showToast('PIANO用サンプルを録音しました');
-    }
-
-    state.recordedChunks = [];
-    renderStatus();
+  function currentDiscOffset() {
+    if (!state.discBuffer) return state.discScrubPos || 0;
+    if (!state.isDiscPlaying || !state.discLoopSource) return state.discScrubPos || 0;
+    const elapsed = state.audioCtx.currentTime - state.discLoopStartedAt;
+    const dur = state.discBuffer.duration || 0.001;
+    return (state.discLoopStartOffset + elapsed) % dur;
   }
 
-  function connectSource(source, kind) {
-    const gain = kind === 'disc' ? state.discGain : state.pianoGain;
-    source.connect(gain);
-    gain.connect(state.filterNode);
-  }
-
-  function stopDiscSource() {
-    if (state.discActiveSource) {
-      try { state.discActiveSource.stop(0); } catch (_) {}
-      try { state.discActiveSource.disconnect(); } catch (_) {}
-      state.discActiveSource = null;
-    }
-  }
-
-  function triggerDiscSlice(rate = 1) {
+  async function startDiscLoop(offset = 0) {
     if (!state.discBuffer) return;
-    const now = performance.now();
-    if (now - state.discShotCooldown < 16) return;
-    state.discShotCooldown = now;
-
-    stopDiscSource();
+    await ensureAudio();
+    stopDiscLoop();
     const src = state.audioCtx.createBufferSource();
+    const gain = state.audioCtx.createGain();
     src.buffer = state.discBuffer;
-    src.playbackRate.value = clamp(Math.abs(rate), 0.72, 2.2);
-
-    connectSource(src, 'disc');
-
-    const offset = clamp(state.discScrubPos, 0, Math.max(0.001, state.discBuffer.duration - 0.06));
-    const dur = clamp(SCRATCH_SLICE_SEC * (1.15 - Math.min(0.5, Math.abs(rate - 1))), 0.028, 0.07);
-
-    try {
-      src.start(0, offset, dur);
-    } catch (_) {
-      try { src.start(); } catch (_) {}
-    }
-
-    src.onended = () => {
-      if (state.discActiveSource === src) state.discActiveSource = null;
-    };
-    state.discActiveSource = src;
+    src.loop = true;
+    src.playbackRate.value = 1;
+    gain.gain.value = 1;
+    src.connect(gain);
+    gain.connect(state.audioCtx.destination);
+    src.start(0, offset % state.discBuffer.duration);
+    state.discLoopSource = src;
+    state.discLoopGain = gain;
+    state.discLoopStartedAt = state.audioCtx.currentTime;
+    state.discLoopStartOffset = offset % state.discBuffer.duration;
+    state.isDiscPlaying = true;
   }
 
-  function updateDiscTransform() {
-    const rot = state.discRotation + state.discDragRotation;
-    els.disc.style.transform = `rotate(${rot.toFixed(3)}deg)`;
+  function updateDiscButtons() {
+    el.btnDiscPlay.classList.toggle('playing', state.isDiscPlaying);
+    el.btnDiscPlay.disabled = !state.discBuffer || !!state.mediaRecorder;
+    el.btnDiscStop.disabled = (!state.isDiscPlaying && !state.discDragging) || !!state.mediaRecorder;
   }
 
-  function discSpinLoop() {
-    const shouldAutoSpin = !state.discTouching;
-    if (shouldAutoSpin) {
-      state.discRotation += DISC_IDLE_RPM * 6 / 60 / 60; 
-    }
-    updateDiscTransform();
-    state.spinRAF = requestAnimationFrame(discSpinLoop);
+  function updateRecButtons() {
+    const discRec = state.mediaRecorder && state.activeTarget === 'disc';
+    const pianoRec = state.mediaRecorder && state.activeTarget === 'piano';
+    el.btnDiscRec.classList.toggle('recording', !!discRec);
+    el.btnPianoRec.classList.toggle('recording', !!pianoRec);
+    el.btnDiscRec.disabled = !!pianoRec;
+    el.btnPianoRec.disabled = !!discRec;
   }
 
-  function onDiscDown(e) {
-    e.preventDefault();
-    resumeAudio().catch(() => {});
-    state.discTouching = true;
-    state.discLastX = e.clientX;
-    state.discLastTime = performance.now();
-    state.pointerCaptureId = e.pointerId;
-    if (els.discWrap.setPointerCapture) {
-      try { els.discWrap.setPointerCapture(e.pointerId); } catch (_) {}
-    }
-  }
-
-  function onDiscMove(e) {
-    if (!state.discTouching) return;
-    e.preventDefault();
+  function renderStatus() {
     const now = performance.now();
-    const dx = e.clientX - state.discLastX;
-    const dt = Math.max(8, now - state.discLastTime);
-    state.discLastX = e.clientX;
-    state.discLastTime = now;
+    const recording = !!state.mediaRecorder;
+    const remaining = recording ? Math.max(0, (state.recordStopAt - now) / 1000) : 0;
 
-    state.discDragRotation += dx * 0.9;
-    state.discDragRotation *= 0.985;
-    updateDiscTransform();
+    if (state.activeTarget === 'disc' && recording) {
+      el.btnDiscRec.textContent = `DISC REC ${remaining.toFixed(1)}`;
+    } else {
+      el.btnDiscRec.textContent = 'DISC REC';
+    }
+    if (state.activeTarget === 'piano' && recording) {
+      el.btnPianoRec.textContent = `PIANO REC ${remaining.toFixed(1)}`;
+    } else {
+      el.btnPianoRec.textContent = 'PIANO REC';
+    }
 
-    if (!state.discBuffer) return;
-    const delta = dx * SCRATCH_SENSITIVITY;
-    state.discScrubPos = clamp(state.discScrubPos + delta, 0, Math.max(0, state.discBuffer.duration - 0.001));
-    const speed = clamp(Math.abs(dx / dt) * 2.6 + 0.78, 0.72, 2.3);
-    triggerDiscSlice(speed);
+    if (state.activeTarget === 'disc' && recording) {
+      el.discDot.className = 'status-dot rec';
+      el.discStatusText.textContent = `DISC REC ${remaining.toFixed(1)}`;
+    } else if (state.discBuffer) {
+      el.discDot.className = 'status-dot ok';
+      el.discStatusText.textContent = 'DISC READY';
+    } else {
+      el.discDot.className = 'status-dot';
+      el.discStatusText.textContent = 'DISC EMPTY';
+    }
+
+    if (state.activeTarget === 'piano' && recording) {
+      el.pianoDot.className = 'status-dot rec';
+      el.pianoStatusText.textContent = `PIANO REC ${remaining.toFixed(1)}`;
+    } else if (state.pianoBuffer) {
+      el.pianoDot.className = 'status-dot ok';
+      el.pianoStatusText.textContent = 'PIANO READY';
+    } else {
+      el.pianoDot.className = 'status-dot';
+      el.pianoStatusText.textContent = 'PIANO EMPTY';
+    }
+
+    if (state.discDragging) {
+      el.discPlayState.textContent = 'SCRATCH';
+    } else if (state.isDiscPlaying) {
+      el.discPlayState.textContent = 'PLAYING';
+    } else {
+      el.discPlayState.textContent = 'STOPPED';
+    }
+
+    updateRecButtons();
+    updateDiscButtons();
   }
 
-  function onDiscUp(e) {
-    if (!state.discTouching) return;
-    e.preventDefault();
-    state.discTouching = false;
-    state.pointerCaptureId = null;
-    if (els.discWrap.releasePointerCapture && typeof e.pointerId === 'number') {
-      try { els.discWrap.releasePointerCapture(e.pointerId); } catch (_) {}
+  async function startRecording(target) {
+    await ensureAudio();
+    await prepareMic();
+    stopRecording(true);
+    stopDiscLoop();
+    state.recordChunks = [];
+    state.activeTarget = target;
+    const mimeType = pickMimeType();
+    const recorder = mimeType ? new MediaRecorder(state.mediaStream, { mimeType }) : new MediaRecorder(state.mediaStream);
+    state.mediaRecorder = recorder;
+    recorder.addEventListener('dataavailable', (e) => {
+      if (e.data && e.data.size > 0) state.recordChunks.push(e.data);
+    });
+    recorder.addEventListener('stop', async () => {
+      try {
+        const type = recorder.mimeType || mimeType || 'audio/webm';
+        const blob = new Blob(state.recordChunks, { type });
+        if (!blob.size) throw new Error('録音データが空でした。');
+        const buffer = normalizeMonoBuffer(await blobToAudioBuffer(blob));
+        if (state.activeTarget === 'disc') {
+          state.discBuffer = buffer;
+          state.discScrubPos = 0;
+          state.discRotationDeg = 0;
+        } else if (state.activeTarget === 'piano') {
+          state.pianoBuffer = buffer;
+        }
+      } catch (err) {
+        console.error(err);
+        showError('録音データの変換に失敗しました。別ブラウザも試してください。', true);
+      } finally {
+        state.activeTarget = null;
+        state.mediaRecorder = null;
+        renderStatus();
+      }
+    }, { once: true });
+    recorder.start();
+    state.recordStopAt = performance.now() + MAX_RECORD_MS;
+    clearTimeout(state.recordTimer);
+    state.recordTimer = setTimeout(() => stopRecording(false), MAX_RECORD_MS + 20);
+    renderStatus();
+  }
+
+  function stopRecording(silent) {
+    clearTimeout(state.recordTimer);
+    state.recordTimer = null;
+    const recorder = state.mediaRecorder;
+    if (!recorder) return;
+    if (recorder.state !== 'inactive') {
+      try { recorder.stop(); } catch {}
+    }
+    if (silent) {
+      state.mediaRecorder = null;
+      state.activeTarget = null;
+      renderStatus();
     }
   }
 
-  function playPianoNote(semitone, pointerId, btnEl) {
-    if (!state.pianoBuffer) {
-      showToast('先に PIANO REC で録音してください');
-      return;
-    }
+  async function playPianoNote(semitone) {
+    if (!state.pianoBuffer) return;
+    await ensureAudio();
     const src = state.audioCtx.createBufferSource();
     const gain = state.audioCtx.createGain();
     src.buffer = state.pianoBuffer;
-    src.playbackRate.value = NOTE_RATES[semitone];
-
-    gain.gain.setValueAtTime(0.0, state.audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(1.0, state.audioCtx.currentTime + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, state.audioCtx.currentTime + Math.min(2.1, Math.max(0.38, state.pianoBuffer.duration * 1.15)));
-
+    src.playbackRate.value = SEMITONE_RATES[semitone] || 1;
     src.connect(gain);
-    gain.connect(state.pianoGain);
-    state.pianoGain.connect(state.filterNode);
-
-    src.start();
-    const stopAt = state.audioCtx.currentTime + Math.min(2.4, Math.max(0.44, state.pianoBuffer.duration * 1.24));
-    src.stop(stopAt);
-    state.noteSources.set(pointerId, src);
-    btnEl.classList.add('active');
+    gain.connect(state.audioCtx.destination);
+    const now = state.audioCtx.currentTime;
+    const dur = Math.min(state.pianoBuffer.duration / src.playbackRate.value, 1.5);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(1, now + 0.008);
+    gain.gain.setTargetAtTime(0.0001, now + Math.max(0.1, dur * 0.35), 0.2);
+    src.start(now, 0, Math.min(state.pianoBuffer.duration, 2.2));
+    src.stop(now + Math.min(dur + 0.45, 2.2));
   }
 
-  function stopPianoNote(pointerId, btnEl) {
-    const src = state.noteSources.get(pointerId);
-    if (src) {
-      try { src.stop(); } catch (_) {}
-      state.noteSources.delete(pointerId);
-    }
-    if (btnEl) btnEl.classList.remove('active');
+  async function scratchAt(offsetSec, speed) {
+    if (!state.discBuffer) return;
+    const now = performance.now();
+    if (now - state.lastScratchAt < 12) return;
+    state.lastScratchAt = now;
+    await ensureAudio();
+    const src = state.audioCtx.createBufferSource();
+    const gain = state.audioCtx.createGain();
+    src.buffer = state.discBuffer;
+    const rate = clamp(Math.abs(speed) * 0.018 + 0.75, 0.75, 2.4);
+    src.playbackRate.value = speed >= 0 ? rate : -rate;
+    src.connect(gain);
+    gain.connect(state.audioCtx.destination);
+    const t = state.audioCtx.currentTime;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(SCRATCH_GAIN, t + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    const offset = clamp(offsetSec, 0, Math.max(0, state.discBuffer.duration - SCRATCH_SLICE_SEC));
+    src.start(t, offset, SCRATCH_SLICE_SEC);
+    src.stop(t + 0.1);
   }
 
-  function onKeyDown(e) {
+  function getDiscAngleFromPointer(e) {
+    const rect = el.disc.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    return Math.atan2(e.clientY - cy, e.clientX - cx);
+  }
+
+  function normalizeAngleDelta(delta) {
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    return delta;
+  }
+
+  function onDiscDown(e) {
+    if (!state.discBuffer || state.mediaRecorder) return;
     e.preventDefault();
-    resumeAudio().catch(() => {});
-    const btn = e.currentTarget;
-    const pointerId = e.pointerId;
-    if (btn.setPointerCapture) {
-      try { btn.setPointerCapture(pointerId); } catch (_) {}
+    state.discDragging = true;
+    state.discWasPlayingBeforeScratch = state.isDiscPlaying;
+    if (state.isDiscPlaying) {
+      state.discScrubPos = currentDiscOffset();
+      stopDiscLoop();
     }
-    state.activeKeyIds.set(pointerId, btn);
-    const semitone = Number(btn.dataset.semitone);
-    playPianoNote(semitone, pointerId, btn);
+    state.lastDiscAngle = getDiscAngleFromPointer(e);
+    el.disc.setPointerCapture?.(e.pointerId);
+    renderStatus();
   }
 
-  function onKeyUp(e) {
+  function onDiscMove(e) {
+    if (!state.discDragging || !state.discBuffer) return;
     e.preventDefault();
-    const btn = state.activeKeyIds.get(e.pointerId) || e.currentTarget;
-    stopPianoNote(e.pointerId, btn);
-    state.activeKeyIds.delete(e.pointerId);
+    const angle = getDiscAngleFromPointer(e);
+    let delta = normalizeAngleDelta(angle - state.lastDiscAngle);
+    if (Math.abs(delta) < 0.003) return;
+    delta = clamp(delta, -0.28, 0.28);
+    state.lastDiscAngle = angle;
+    state.discRotationDeg += delta * (180 / Math.PI);
+    state.discScrubPos = clamp(
+      state.discScrubPos + delta * (180 / Math.PI) * SCRATCH_ANGLE_TO_SEC,
+      0,
+      Math.max(0.001, state.discBuffer.duration - SCRATCH_SLICE_SEC)
+    );
+    scratchAt(state.discScrubPos, delta * 180 / Math.PI);
+    renderDisc();
   }
 
-  function onKeyLeave(e) {
-    if (state.activeKeyIds.has(e.pointerId)) {
-      onKeyUp(e);
+  async function onDiscUp(e) {
+    if (!state.discDragging) return;
+    e.preventDefault();
+    state.discDragging = false;
+    try { el.disc.releasePointerCapture?.(e.pointerId); } catch {}
+    if (state.discWasPlayingBeforeScratch && state.discBuffer) {
+      await startDiscLoop(state.discScrubPos);
     }
+    renderStatus();
   }
 
-  function knobAngleFromValue(value) {
-    return -135 + value * 270;
+  function renderDisc() {
+    el.disc.style.transform = `rotate(${state.discRotationDeg}deg)`;
   }
 
-  function renderKnob(which) {
-    if (which === 'filter') {
-      els.filterIndicator.style.transform = `rotate(${knobAngleFromValue(state.filterValue)}deg)`;
-      els.filterValue.textContent = `${Math.round(state.filterValue * 100)}%`;
-      els.filterKnob.setAttribute('aria-valuenow', String(Math.round(state.filterValue * 100)));
-    } else {
-      els.spaceIndicator.style.transform = `rotate(${knobAngleFromValue(state.spaceValue)}deg)`;
-      els.spaceValue.textContent = `${Math.round(state.spaceValue * 100)}%`;
-      els.spaceKnob.setAttribute('aria-valuenow', String(Math.round(state.spaceValue * 100)));
-    }
+  function buildKeyboard() {
+    WHITE_NOTE_ORDER.forEach((semi) => {
+      const key = document.createElement('div');
+      key.className = 'white-key';
+      key.dataset.note = semi;
+      el.whiteKeys.appendChild(key);
+    });
   }
 
-  function updateFilter(value) {
-    state.filterValue = clamp(value, 0, 1);
-    if (state.filterNode && state.audioCtx) {
-      const min = 350;
-      const max = 14000;
-      const freq = min * Math.pow(max / min, state.filterValue);
-      state.filterNode.frequency.setTargetAtTime(freq, state.audioCtx.currentTime, 0.02);
-    }
-    renderKnob('filter');
-  }
-
-  function updateSpace(value) {
-    state.spaceValue = clamp(value, 0, 1);
-    if (state.wetGain && state.dryGain) {
-      state.wetGain.gain.value = state.spaceValue * 0.38;
-      state.dryGain.gain.value = 1 - state.spaceValue * 0.18;
-    }
-    renderKnob('space');
-  }
-
-  function bindKnob(el, type) {
-    let dragging = false;
-    let startY = 0;
-    let startValue = 0;
-
-    const update = (v) => {
-      if (type === 'filter') updateFilter(v);
-      else updateSpace(v);
-    };
-
-    el.addEventListener('pointerdown', async (e) => {
-      e.preventDefault();
-      await resumeAudio().catch(() => {});
-      dragging = true;
-      startY = e.clientY;
-      startValue = type === 'filter' ? state.filterValue : state.spaceValue;
-      if (el.setPointerCapture) {
-        try { el.setPointerCapture(e.pointerId); } catch (_) {}
-      }
-    }, { passive: false });
-
-    el.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      e.preventDefault();
-      const dy = startY - e.clientY;
-      const delta = dy / 180;
-      update(startValue + delta);
-    }, { passive: false });
-
-    const end = (e) => {
-      if (!dragging) return;
-      dragging = false;
-      if (el.releasePointerCapture) {
-        try { el.releasePointerCapture(e.pointerId); } catch (_) {}
-      }
-    };
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-
-    el.addEventListener('keydown', async (e) => {
-      let step = 0;
-      if (e.key === 'ArrowUp' || e.key === 'ArrowRight') step = 0.03;
-      if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') step = -0.03;
-      if (!step) return;
-      e.preventDefault();
-      await resumeAudio().catch(() => {});
-      update((type === 'filter' ? state.filterValue : state.spaceValue) + step);
+  function bindKeyboard() {
+    document.querySelectorAll('.white-key, .black-key').forEach((keyEl) => {
+      const down = async (e) => {
+        if (state.mediaRecorder) return;
+        e.preventDefault();
+        keyEl.classList.add('active');
+        await playPianoNote(Number(keyEl.dataset.note));
+      };
+      const up = () => keyEl.classList.remove('active');
+      keyEl.addEventListener('pointerdown', down, { passive: false });
+      keyEl.addEventListener('pointerup', up);
+      keyEl.addEventListener('pointercancel', up);
+      keyEl.addEventListener('pointerleave', up);
     });
   }
 
   async function handleStart() {
     try {
-      await resumeAudio();
-      state.started = true;
+      if (!isSecureEnough()) throw new Error('HTTPS または localhost で開いてください。');
+      await ensureAudio();
+      await prepareMic();
+      state.enabled = true;
+      el.startupOverlay.classList.add('hidden');
       renderStatus();
-      els.overlay.classList.add('hidden');
-      showToast('音声を有効化しました');
     } catch (err) {
       console.error(err);
-      showToast('音声初期化に失敗しました');
+      showError(err.message || '起動に失敗しました。', true);
     }
   }
 
+  async function handleDiscPlay() {
+    try {
+      if (!state.discBuffer) return;
+      await ensureAudio();
+      await startDiscLoop(state.discScrubPos || 0);
+      renderStatus();
+    } catch (err) {
+      console.error(err);
+      showError('DISC の再生を開始できませんでした。', true);
+    }
+  }
+
+  function handleDiscStop() {
+    state.discScrubPos = currentDiscOffset();
+    stopDiscLoop();
+    renderStatus();
+  }
+
+  function animate(ts) {
+    if (!state.lastAnimTime) state.lastAnimTime = ts;
+    const dt = (ts - state.lastAnimTime) / 1000;
+    state.lastAnimTime = ts;
+    if (state.isDiscPlaying && !state.discDragging) {
+      state.discRotationDeg += ROTATION_DEG_PER_SEC * dt;
+      renderDisc();
+    }
+    renderStatus();
+    requestAnimationFrame(animate);
+  }
+
+  function preloadDiscImage() {
+    const img = new Image();
+    img.referrerPolicy = 'no-referrer';
+    img.src = DISC_IMAGE_URL;
+  }
+
   function attachEvents() {
-    els.btnStart.addEventListener('click', handleStart);
-    els.btnCloseOverlay.addEventListener('click', () => els.overlay.classList.add('hidden'));
+    el.btnStart.addEventListener('click', handleStart, { passive: true });
+    el.btnDiscRec.addEventListener('click', () => startRecording('disc').catch(err => {
+      console.error(err); showError(err.message || 'DISC 録音に失敗しました。', true);
+    }));
+    el.btnPianoRec.addEventListener('click', () => startRecording('piano').catch(err => {
+      console.error(err); showError(err.message || 'PIANO 録音に失敗しました。', true);
+    }));
+    el.btnDiscPlay.addEventListener('click', handleDiscPlay);
+    el.btnDiscStop.addEventListener('click', handleDiscStop);
 
-    els.btnDiscRec.addEventListener('click', async () => {
-      try {
-        if (state.recordingTarget === 'disc') {
-          await stopRecording('disc');
-        } else {
-          await startRecording('disc');
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('DISC録音を開始できませんでした');
-      }
-    });
-
-    els.btnPianoRec.addEventListener('click', async () => {
-      try {
-        if (state.recordingTarget === 'piano') {
-          await stopRecording('piano');
-        } else {
-          await startRecording('piano');
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('PIANO録音を開始できませんでした');
-      }
-    });
-
-    els.discWrap.addEventListener('pointerdown', onDiscDown, { passive: false });
-    els.discWrap.addEventListener('pointermove', onDiscMove, { passive: false });
+    el.disc.addEventListener('pointerdown', onDiscDown, { passive: false });
+    el.disc.addEventListener('pointermove', onDiscMove, { passive: false });
     window.addEventListener('pointerup', onDiscUp, { passive: false });
     window.addEventListener('pointercancel', onDiscUp, { passive: false });
 
-    bindKnob(els.filterKnob, 'filter');
-    bindKnob(els.spaceKnob, 'space');
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && state.recordingTarget) stopRecording().catch(() => {});
+    document.addEventListener('visibilitychange', async () => {
+      if (!state.audioCtx) return;
+      if (document.visibilityState === 'visible' && state.enabled) {
+        try { await state.audioCtx.resume(); } catch {}
+      }
     });
 
-    window.addEventListener('pagehide', () => {
-      if (state.recordingTarget) stopRecording().catch(() => {});
-    });
+    bindKeyboard();
   }
 
   function boot() {
     buildKeyboard();
-    renderStatus();
-    renderKnob('filter');
-    renderKnob('space');
     attachEvents();
-    state.spinRAF = requestAnimationFrame(discSpinLoop);
+    preloadDiscImage();
+    renderDisc();
+    renderStatus();
+    requestAnimationFrame(animate);
   }
 
   boot();
