@@ -307,6 +307,9 @@ const WHITE_NOTES = [
   {name:"B", semitone:11},
   {name:"C5", semitone:12},
 ];
+const SCRATCH_GRAIN_SEC = 0.085;
+const SCRATCH_MIN_DELTA = 0.012; // radians
+const SCRATCH_EMIT_MS = 10;
 
 const state = {
   audioCtx: null,
@@ -318,13 +321,11 @@ const state = {
   recordStopAt: 0,
 
   discBuffer: null,
+  discReverseBuffer: null,
   pianoBuffer: null,
 
   discBus: null,
-  discLoopGain: null,
-  discScratchGain: null,
   pianoBus: null,
-
   discVol: 0.50,
   pianoVol: 0.50,
 
@@ -334,11 +335,11 @@ const state = {
   discPausedOffset: 0,
 
   scratching: false,
+  wasPlayingBeforeScratch: false,
   scratchPointerId: null,
   scratchPrevAngle: 0,
   scratchPos: 0,
-  scratchBurstAt: 0,
-  activeScratchSources: new Set(),
+  lastScratchEmitAt: 0,
 
   visualRotation: 0,
   spinRaf: 0,
@@ -404,11 +405,8 @@ async function ensureAudio(){
     state.audioCtx = new Ctx({ latencyHint: 'interactive' });
 
     state.discBus = state.audioCtx.createGain();
-    state.discLoopGain = state.audioCtx.createGain();
-    state.discScratchGain = state.audioCtx.createGain();
     state.pianoBus = state.audioCtx.createGain();
     const comp = state.audioCtx.createDynamicsCompressor();
-
     comp.threshold.value = -18;
     comp.knee.value = 18;
     comp.ratio.value = 3;
@@ -416,12 +414,7 @@ async function ensureAudio(){
     comp.release.value = 0.15;
 
     state.discBus.gain.value = state.discVol;
-    state.discLoopGain.gain.value = 1.0;
-    state.discScratchGain.gain.value = 1.0;
     state.pianoBus.gain.value = state.pianoVol;
-
-    state.discLoopGain.connect(state.discBus);
-    state.discScratchGain.connect(state.discBus);
     state.discBus.connect(comp);
     state.pianoBus.connect(comp);
     comp.connect(state.audioCtx.destination);
@@ -471,12 +464,12 @@ function normalizeBufferSmart(buffer, targetPeak = 0.84, maxBoost = 4.0){
   for (let i = 0; i < src.length; i++) dst[i] = clamp(src[i] * gain, -0.99, 0.99);
   return out;
 }
-function cleanupScratchSources(){
-  for (const src of Array.from(state.activeScratchSources)) {
-    try { src.stop(); } catch {}
-    try { src.disconnect(); } catch {}
-    state.activeScratchSources.delete(src);
-  }
+function makeReverseBuffer(buffer){
+  const rev = state.audioCtx.createBuffer(1, buffer.length, buffer.sampleRate);
+  const src = buffer.getChannelData(0);
+  const dst = rev.getChannelData(0);
+  for (let i = 0, j = src.length - 1; i < src.length; i++, j--) dst[i] = src[j];
+  return rev;
 }
 function resetRecordButtons(){
   el.btnDiscRec.textContent = 'DISC REC';
@@ -533,6 +526,7 @@ async function startRecording(target) {
   stopRecording(true);
   stopDiscScratchOnly();
   if (target === 'disc') stopDiscPlayback();
+
   state.mediaChunks = [];
   state.activeTarget = target;
   const maxMs = target === 'disc' ? DISC_MAX_MS : PIANO_MAX_MS;
@@ -540,6 +534,7 @@ async function startRecording(target) {
   const recorder = mimeType ? new MediaRecorder(state.micStream, { mimeType }) : new MediaRecorder(state.micStream);
   state.mediaRecorder = recorder;
   const recordTarget = target;
+
   recorder.addEventListener('dataavailable', (e) => {
     if (e.data && e.data.size > 0) state.mediaChunks.push(e.data);
   });
@@ -548,12 +543,14 @@ async function startRecording(target) {
       const type = recorder.mimeType || mimeType || 'audio/webm';
       const blob = new Blob(state.mediaChunks, { type });
       if (!blob.size) throw new Error('録音データが空でした。');
+
       let buffer = await blobToAudioBuffer(blob);
       buffer = toMonoBuffer(buffer);
       buffer = normalizeBufferSmart(buffer, recordTarget === 'disc' ? 0.82 : 0.88, recordTarget === 'disc' ? 3.0 : 4.0);
 
       if (recordTarget === 'disc') {
         state.discBuffer = buffer;
+        state.discReverseBuffer = makeReverseBuffer(buffer);
         state.discPausedOffset = 0;
         state.scratchPos = 0;
         state.visualRotation = 0;
@@ -570,11 +567,13 @@ async function startRecording(target) {
       renderStatus();
     }
   }, { once: true });
+
   recorder.start();
   state.recordStopAt = performance.now() + maxMs;
   clearTimeout(state.recordTimer);
   state.recordTimer = setTimeout(() => stopRecording(false), maxMs + 20);
   renderStatus();
+
   const loop = () => {
     if (!state.activeTarget) return;
     updateRecButtons();
@@ -597,12 +596,13 @@ function stopRecording(silent) {
   }
 }
 function currentTime(){ return state.audioCtx ? state.audioCtx.currentTime : 0; }
-function createDiscSource(offset=0){
+
+function createDiscLoopSource(offset=0){
   if (!state.discBuffer) return null;
   const src = state.audioCtx.createBufferSource();
   src.buffer = state.discBuffer;
   src.loop = true;
-  src.connect(state.discLoopGain);
+  src.connect(state.discBus);
   src.start(0, wrap(offset, state.discBuffer.duration));
   return src;
 }
@@ -615,11 +615,10 @@ function startDiscPlayback(offset = null){
   if (!state.discBuffer) return;
   stopDiscPlayback(true);
   const startOffset = offset == null ? state.discPausedOffset : offset;
-  state.discLoopSource = createDiscSource(startOffset);
+  state.discLoopSource = createDiscLoopSource(startOffset);
   state.discPausedOffset = wrap(startOffset, state.discBuffer.duration);
   state.discLoopStartTime = currentTime();
   state.discPlaying = true;
-  state.discLoopGain.gain.setTargetAtTime(1, currentTime(), 0.015);
   startSpin();
   renderStatus();
 }
@@ -643,7 +642,7 @@ function startSpin(){
   const rpm = 33.3333;
   const degPerSec = rpm * 360 / 60;
   const loop = (ts) => {
-    if (!state.discPlaying || state.scratching) {
+    if (!state.discPlaying || state.scratching){
       state.lastSpinTs = ts;
       state.spinRaf = requestAnimationFrame(loop);
       return;
@@ -668,52 +667,58 @@ function getAngleFromPointer(e){
   const cy = rect.top + rect.height / 2;
   return Math.atan2(e.clientY - cy, e.clientX - cx);
 }
-function playScratchAssist(offset, delta){
-  if (!state.scratching || !state.discBuffer) return;
-  const t = currentTime();
-  if (t - state.scratchBurstAt < 0.009) return;
-  state.scratchBurstAt = t;
 
+function emitDiscScrub(posSec, deltaAngle){
+  if (!state.discBuffer || !state.discReverseBuffer) return;
+  const nowMs = performance.now();
+  if (nowMs - state.lastScratchEmitAt < SCRATCH_EMIT_MS) return;
+  state.lastScratchEmitAt = nowMs;
+
+  const forward = deltaAngle >= 0;
   const src = state.audioCtx.createBufferSource();
-  src.buffer = state.discBuffer;
+  src.buffer = forward ? state.discBuffer : state.discReverseBuffer;
+
+  const speed = clamp(Math.abs(deltaAngle) / 0.08, 0.85, 3.0);
+  src.playbackRate.value = speed;
+
   const gain = state.audioCtx.createGain();
-
-  const motion = clamp(Math.abs(delta) / 0.14, 0, 1.2);
-  const peakGain = 0.24 * motion;
+  const t = currentTime();
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.linearRampToValueAtTime(Math.max(0.05, peakGain), t + 0.003);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+  gain.gain.linearRampToValueAtTime(1.05, t + 0.003);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.085);
+  src.connect(gain).connect(state.discBus);
 
-  src.connect(gain).connect(state.discScratchGain);
-  state.activeScratchSources.add(src);
-  src.onended = () => state.activeScratchSources.delete(src);
-
-  let start = wrap(offset, state.discBuffer.duration);
-  let dur = Math.min(0.085, Math.max(0.03, state.discBuffer.duration - 0.001));
-  if (start + dur >= state.discBuffer.duration) {
-    start = Math.max(0, state.discBuffer.duration - dur - 0.001);
+  let start;
+  if (forward) {
+    start = wrap(posSec, state.discBuffer.duration);
+    if (start + SCRATCH_GRAIN_SEC >= state.discBuffer.duration) {
+      start = Math.max(0, state.discBuffer.duration - SCRATCH_GRAIN_SEC - 0.001);
+    }
+  } else {
+    const revPos = wrap(state.discBuffer.duration - posSec - SCRATCH_GRAIN_SEC, state.discBuffer.duration);
+    start = clamp(revPos, 0, Math.max(0, state.discBuffer.duration - SCRATCH_GRAIN_SEC - 0.001));
   }
-  src.start(t, start, dur);
-  src.stop(t + dur + 0.04);
+
+  src.start(t, start, SCRATCH_GRAIN_SEC);
+  src.stop(t + 0.09);
 }
+
 function stopDiscScratchOnly(){
   state.scratching = false;
   state.scratchPointerId = null;
-  cleanupScratchSources();
 }
+
 function onDiscPointerDown(e){
   if (!state.discBuffer) return;
   e.preventDefault();
   ensureAudio();
   el.disc.setPointerCapture(e.pointerId);
   state.scratching = true;
+  state.wasPlayingBeforeScratch = state.discPlaying;
   state.scratchPointerId = e.pointerId;
   state.scratchPrevAngle = getAngleFromPointer(e);
   state.scratchPos = currentDiscOffset();
-  cleanupScratchSources();
-  if (state.discPlaying) {
-    state.discLoopGain.gain.setTargetAtTime(0.62, currentTime(), 0.01);
-  }
+  stopDiscPlayback(true);
   renderStatus();
 }
 function onDiscPointerMove(e){
@@ -722,7 +727,9 @@ function onDiscPointerMove(e){
   const angle = getAngleFromPointer(e);
   let delta = normalizeAngleDelta(angle - state.scratchPrevAngle);
   state.scratchPrevAngle = angle;
-  delta = clamp(delta, -0.7, 0.7);
+
+  delta = clamp(delta, -0.75, 0.75);
+  if (Math.abs(delta) < SCRATCH_MIN_DELTA) return;
 
   const dur = state.discBuffer.duration;
   const shift = (delta / (Math.PI * 2)) * dur;
@@ -732,23 +739,23 @@ function onDiscPointerMove(e){
   state.visualRotation += delta * 180 / Math.PI;
   applyDiscRotation();
 
-  playScratchAssist(state.scratchPos, delta);
+  emitDiscScrub(state.scratchPos, delta);
 }
 function onDiscPointerEnd(e){
   if (!state.scratching || e.pointerId !== state.scratchPointerId) return;
   e.preventDefault();
-  cleanupScratchSources();
   stopDiscScratchOnly();
-  if (state.discPlaying) {
+  if (state.wasPlayingBeforeScratch) {
     startDiscPlayback(state.scratchPos);
   } else {
+    state.discPausedOffset = state.scratchPos;
     renderStatus();
   }
 }
+
 function semitoneRate(semi){ return Math.pow(2, semi / 12); }
 function playPiano(semi){
   if (!state.pianoBuffer || !state.audioCtx) return;
-  cleanupScratchSources();
   const t = currentTime();
   const src = state.audioCtx.createBufferSource();
   src.buffer = state.pianoBuffer;
@@ -756,12 +763,12 @@ function playPiano(semi){
 
   const gain = state.audioCtx.createGain();
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.linearRampToValueAtTime(1.35, t + 0.006);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.min(2.4, Math.max(0.42, state.pianoBuffer.duration * 1.0)));
+  gain.gain.linearRampToValueAtTime(1.2, t + 0.006);
+  gain.gain.setValueAtTime(1.2, t + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + (state.pianoBuffer.duration / src.playbackRate.value) + 0.03);
 
   src.connect(gain).connect(state.pianoBus);
   src.start(t, 0);
-  src.stop(t + Math.min(2.6, Math.max(0.5, state.pianoBuffer.duration * 1.15)));
 }
 function buildKeys(){
   WHITE_NOTES.forEach((note)=>{
@@ -791,22 +798,22 @@ function hook(){
       showToast('マイク許可を確認してください');
     }
   });
+
   el.btnDiscRec.addEventListener('click', async ()=>{
     try{ await startRecording('disc'); }catch(err){ console.error(err); showToast('DISC録音を開始できませんでした'); }
   });
   el.btnPianoRec.addEventListener('click', async ()=>{
     try{ await startRecording('piano'); }catch(err){ console.error(err); showToast('PIANO録音を開始できませんでした'); }
   });
+
   el.btnDiscPlay.addEventListener('click', async ()=>{
     try{
       await ensureAudio();
       if (state.discBuffer) startDiscPlayback(currentDiscOffset());
     }catch(err){ console.error(err); }
   });
-  el.btnDiscStop.addEventListener('click', ()=>{
-    stopDiscPlayback();
-    cleanupScratchSources();
-  });
+  el.btnDiscStop.addEventListener('click', ()=>stopDiscPlayback());
+
   el.discVol.addEventListener('input', ()=>{
     state.discVol = Number(el.discVol.value) / 100;
     el.discVolValue.textContent = `${el.discVol.value}%`;
@@ -825,7 +832,6 @@ function hook(){
 
   window.addEventListener('blur', ()=>{
     if (state.activeTarget) stopRecording(false);
-    cleanupScratchSources();
     stopDiscScratchOnly();
   });
   document.addEventListener('visibilitychange', ()=>{
