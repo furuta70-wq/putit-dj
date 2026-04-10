@@ -74,17 +74,17 @@ button,input{font:inherit}
 }
 #disc-transport{
   position:absolute;
-  right:18px;
+  right:14px;
   top:50%;
   transform:translateY(-50%);
   display:flex;
   flex-direction:column;
-  gap:10px;
-  width:min(26vw, 200px);
+  gap:8px;
+  width:min(24vw, 180px);
 }
 .transport-btn{
-  min-height:56px;
-  font-size:clamp(14px, 2.1vh, 18px);
+  min-height:48px;
+  font-size:clamp(13px, 1.9vh, 17px);
 }
 .pill{
   position:absolute;
@@ -100,10 +100,10 @@ button,input{font:inherit}
 #disc-status{left:12px;bottom:12px}
 #disc-play-state{right:12px;bottom:12px}
 #control-area{
-  padding:12px;
+  padding:10px;
   display:grid;
-  grid-template-rows:auto auto auto auto auto;
-  gap:10px;
+  grid-template-rows:auto auto auto auto;
+  gap:8px;
   align-content:start;
   overflow:auto;
 }
@@ -113,9 +113,9 @@ button,input{font:inherit}
   letter-spacing:.12em;
 }
 button.ctrl{
-  min-height:54px;
+  min-height:50px;
   border:none;
-  border-radius:18px;
+  border-radius:16px;
   color:var(--text);
   background:linear-gradient(180deg, #2b313a, #1a1f26);
   border:1px solid rgba(255,255,255,.08);
@@ -176,36 +176,36 @@ button.rec.active{
 }
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .slider-wrap{
-  padding:10px 12px 12px;
+  padding:7px 9px 8px;
   border:1px solid rgba(255,255,255,.08);
   background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-  border-radius:18px;
+  border-radius:15px;
 }
 .slider-head{
   display:flex;align-items:center;justify-content:space-between;
-  font-size:clamp(11px, 1.5vh, 14px);
+  font-size:clamp(10px, 1.35vh, 13px);
   color:#d6dbe2;
-  margin-bottom:8px;
+  margin-bottom:4px;
   letter-spacing:.08em;
 }
 input[type="range"]{
   appearance:none;-webkit-appearance:none;
-  width:100%;height:34px;background:transparent;margin:0;
+  width:100%;height:24px;background:transparent;margin:0;
 }
 input[type="range"]::-webkit-slider-runnable-track{
-  height:8px;border-radius:999px;background:linear-gradient(90deg,#38414d,#586273);
+  height:6px;border-radius:999px;background:linear-gradient(90deg,#38414d,#586273);
 }
 input[type="range"]::-moz-range-track{
-  height:8px;border-radius:999px;background:linear-gradient(90deg,#38414d,#586273);
+  height:6px;border-radius:999px;background:linear-gradient(90deg,#38414d,#586273);
 }
 input[type="range"]::-webkit-slider-thumb{
   -webkit-appearance:none;appearance:none;
-  width:24px;height:24px;border-radius:50%;
-  margin-top:-8px;background:#f6f7f9;border:2px solid #a3b2c8;
+  width:20px;height:20px;border-radius:50%;
+  margin-top:-7px;background:#f6f7f9;border:2px solid #a3b2c8;
   box-shadow:0 4px 10px rgba(0,0,0,.25);
 }
 input[type="range"]::-moz-range-thumb{
-  width:24px;height:24px;border-radius:50%;
+  width:20px;height:20px;border-radius:50%;
   background:#f6f7f9;border:2px solid #a3b2c8;
   box-shadow:0 4px 10px rgba(0,0,0,.25);
 }
@@ -291,31 +291,45 @@ input[type="range"]::-moz-range-thumb{
 }
 #toast.show{opacity:1}
 @media (max-width: 900px){
-  #top{grid-template-columns:62fr 38fr}
-  #control-area{padding:10px; gap:8px}
-  button.ctrl{min-height:46px}
-  .slider-wrap{padding:8px 10px 10px}
+  #top{grid-template-columns:63fr 37fr}
+  #control-area{padding:8px; gap:6px}
+  button.ctrl{min-height:42px; border-radius:14px}
+  .slider-wrap{padding:5px 7px 6px; border-radius:13px}
+  .slider-head{margin-bottom:3px; font-size:clamp(9px, 1.2vh, 12px)}
+  input[type="range"]{height:20px}
+  input[type="range"]::-webkit-slider-runnable-track{height:5px}
+  input[type="range"]::-moz-range-track{height:5px}
+  input[type="range"]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-6.5px}
+  input[type="range"]::-moz-range-thumb{width:18px;height:18px}
   #disc-area{padding-left:10px}
-  .disc-wrap{width:min(99%, calc(100vh * .50), calc(100vw * .56))}
+  .disc-wrap{width:min(99%, calc(100vh * .48), calc(100vw * .54))}
   #disc-transport{
-    right:10px;
-    width:min(24vw, 150px);
-    gap:8px;
+    right:8px;
+    width:min(22vw, 136px);
+    gap:6px;
   }
   .transport-btn{
-    min-height:44px;
-    font-size:clamp(12px, 1.8vh, 16px);
+    min-height:40px;
+    font-size:clamp(11px, 1.6vh, 14px);
   }
   .title{
-    font-size:clamp(12px, 1.7vh, 16px);
+    font-size:clamp(11px, 1.45vh, 14px);
   }
 }
 @media (max-height: 520px){
   #app{gap:8px}
   #top{flex-basis:64%}
-  button.ctrl{min-height:42px}
-  #disc-transport{gap:6px}
-  .transport-btn{min-height:40px}
+  button.ctrl{min-height:38px}
+  #control-area{padding:7px; gap:5px}
+  .slider-wrap{padding:4px 6px 5px}
+  .slider-head{margin-bottom:2px; font-size:11px}
+  input[type="range"]{height:18px}
+  input[type="range"]::-webkit-slider-runnable-track{height:4px}
+  input[type="range"]::-moz-range-track{height:4px}
+  input[type="range"]::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
+  input[type="range"]::-moz-range-thumb{width:16px;height:16px}
+  #disc-transport{gap:5px}
+  .transport-btn{min-height:36px; font-size:12px}
 }
 </style>
 </head>
@@ -345,7 +359,6 @@ input[type="range"]::-moz-range-thumb{
         <div class="slider-head"><span>PIANO VOL</span><span id="piano-vol-value">50%</span></div>
         <input id="piano-vol" type="range" min="0" max="100" value="50">
       </div>
-      <div class="small">DISC は最大10秒、PIANO は最大3秒まで録音できます。</div>
     </aside>
   </section>
 
@@ -571,6 +584,7 @@ function recordOnce(maxMs){
     };
 
     recorder.onstart = () => {
+      clearTimeout(startTimeout);
       state.recordStopAt = performance.now() + maxMs;
       clearTimeout(state.activeRecordStopTimer);
       state.activeRecordStopTimer = setTimeout(() => {
