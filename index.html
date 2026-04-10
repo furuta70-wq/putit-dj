@@ -83,8 +83,57 @@ button,input{font:inherit}
   width:min(24vw, 180px);
 }
 .transport-btn{
-  min-height:48px;
+  min-height:54px;
   font-size:clamp(13px, 1.9vh, 17px);
+}
+.beat-btn,
+.toggle-btn{
+  border-radius:999px;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.14), transparent 35%),
+    linear-gradient(180deg, #3a4450, #20262e);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 10px 22px rgba(0,0,0,.26);
+  letter-spacing:.08em;
+}
+.beat-btn{
+  min-height:46px;
+  font-size:clamp(12px, 1.8vh, 15px);
+}
+.beat-kick.active-flash{
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.12), transparent 35%),
+    linear-gradient(180deg, #72513f, #3b2a23);
+  border-color:rgba(255,180,100,.28);
+}
+.beat-clap.active-flash{
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.12), transparent 35%),
+    linear-gradient(180deg, #40557a, #223049);
+  border-color:rgba(130,200,255,.28);
+}
+.toggle-btn.playing{
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,.12), transparent 35%),
+    linear-gradient(180deg, #486a52, #23352a);
+  border-color:rgba(125,224,161,.28);
+}
+.toggle-btn::before{
+  content:'';
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#cfd7e2;
+  margin-right:10px;
+  vertical-align:middle;
+  box-shadow:0 0 0 0 rgba(255,255,255,.0);
+}
+.toggle-btn.playing::before{
+  background:#7de0a1;
+  box-shadow:0 0 10px rgba(125,224,161,.55);
 }
 .pill{
   position:absolute;
@@ -99,6 +148,38 @@ button,input{font:inherit}
 }
 #disc-status{left:12px;bottom:12px}
 #disc-play-state{right:12px;bottom:12px}
+#piano-status{
+  justify-self:start;
+  margin-bottom:2px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(0,0,0,.34);
+  backdrop-filter:blur(8px);
+  font-size:clamp(11px, 1.6vh, 15px);
+  letter-spacing:.08em;
+  white-space:nowrap;
+  min-width:140px;
+}
+#disc-status{
+  min-width:140px;
+}
+#beat-flash{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .08s ease-out;
+  z-index:5;
+}
+#beat-flash.kick{
+  background:radial-gradient(circle at 50% 50%, rgba(255,170,90,.12), rgba(255,120,70,.06), transparent 70%);
+  opacity:1;
+}
+#beat-flash.clap{
+  background:radial-gradient(circle at 50% 50%, rgba(130,210,255,.12), rgba(110,150,255,.06), transparent 70%);
+  opacity:1;
+}
 #control-area{
   padding:10px;
   display:grid;
@@ -225,14 +306,6 @@ input[type="range"]::-moz-range-thumb{
     linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)),
     radial-gradient(circle at 50% 0%, #1c232d 0%, #14191f 60%, #0f1217 100%);
 }
-#piano-status{
-  justify-self:start;
-  margin-bottom:2px;
-  padding:4px 8px;
-  font-size:clamp(10px,1.3vh,13px);
-  color:#d7dde5;
-  letter-spacing:.08em;
-}
 #keys{
   position:relative;
   width:100%;
@@ -329,7 +402,7 @@ input[type="range"]::-moz-range-thumb{
     gap:6px;
   }
   .transport-btn{
-    min-height:40px;
+    min-height:42px;
     font-size:clamp(11px, 1.6vh, 14px);
   }
   .title{
@@ -349,7 +422,7 @@ input[type="range"]::-moz-range-thumb{
   input[type="range"]::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
   input[type="range"]::-moz-range-thumb{width:16px;height:16px}
   #disc-transport{gap:5px}
-  .transport-btn{min-height:36px; font-size:12px}
+  .transport-btn{min-height:38px; font-size:12px}
 }
 </style>
 </head>
@@ -361,8 +434,9 @@ input[type="range"]::-moz-range-thumb{
         <div id="disc" aria-label="record"></div>
       </div>
       <div id="disc-transport">
-        <button id="btn-disc-play" class="ctrl transport-btn">DISC PLAY</button>
-        <button id="btn-disc-stop" class="ctrl transport-btn">DISC STOP</button>
+        <button id="btn-beat-kick" class="ctrl transport-btn beat-btn beat-kick">KICK</button>
+        <button id="btn-beat-clap" class="ctrl transport-btn beat-btn beat-clap">CLAP</button>
+        <button id="btn-disc-toggle" class="ctrl transport-btn toggle-btn">DISC PLAY</button>
       </div>
       <div id="disc-status" class="pill"><span class="dot"></span>DISC EMPTY</div>
       <div id="disc-play-state" class="pill">STOPPED</div>
@@ -394,6 +468,7 @@ input[type="range"]::-moz-range-thumb{
       <div id="busy-text">PROCESSING...</div>
     </div>
   </div>
+  <div id="beat-flash"></div>
 </div>
 
 <div id="boot">
@@ -487,8 +562,9 @@ const el = {
   discPlayState: document.getElementById('disc-play-state'),
   pianoStatus: document.getElementById('piano-status'),
   btnDiscRec: document.getElementById('btn-disc-rec'),
-  btnDiscPlay: document.getElementById('btn-disc-play'),
-  btnDiscStop: document.getElementById('btn-disc-stop'),
+  btnBeatKick: document.getElementById('btn-beat-kick'),
+  btnBeatClap: document.getElementById('btn-beat-clap'),
+  btnDiscToggle: document.getElementById('btn-disc-toggle'),
   btnPianoRec: document.getElementById('btn-piano-rec'),
   discVol: document.getElementById('disc-vol'),
   discVolValue: document.getElementById('disc-vol-value'),
@@ -500,7 +576,8 @@ const el = {
   bootCard: document.getElementById('boot-card'),
   toast: document.getElementById('toast'),
   busyOverlay: document.getElementById('busy-overlay'),
-  busyText: document.getElementById('busy-text')
+  busyText: document.getElementById('busy-text'),
+  beatFlash: document.getElementById('beat-flash')
 };
 
 function showToast(msg){
@@ -571,6 +648,59 @@ function playStartChime(){
   setTimeout(() => {
     try { gain.disconnect(); } catch {}
   }, 220);
+}
+function flashBeat(type){
+  if (!el.beatFlash) return;
+  el.beatFlash.classList.remove('kick', 'clap');
+  void el.beatFlash.offsetWidth;
+  el.beatFlash.classList.add(type);
+  setTimeout(() => {
+    el.beatFlash.classList.remove(type);
+  }, 120);
+}
+function pulseBeatButton(btn, cls){
+  btn.classList.add(cls);
+  setTimeout(() => btn.classList.remove(cls), 120);
+}
+function playKick(){
+  if (!state.audioCtx) return;
+  const t = currentTime();
+  const osc = state.audioCtx.createOscillator();
+  const gain = state.audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(120, t);
+  osc.frequency.exponentialRampToValueAtTime(48, t + 0.11);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.35, t + 0.006);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+  osc.connect(gain).connect(state.audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + 0.14);
+  flashBeat('kick');
+  pulseBeatButton(el.btnBeatKick, 'active-flash');
+}
+function playClap(){
+  if (!state.audioCtx) return;
+  const t = currentTime();
+  const buffer = state.audioCtx.createBuffer(1, state.audioCtx.sampleRate * 0.16, state.audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    data[i] = (Math.random() * 2 - 1);
+  }
+  const src = state.audioCtx.createBufferSource();
+  const hp = state.audioCtx.createBiquadFilter();
+  hp.type = 'highpass';
+  hp.frequency.value = 1400;
+  const gain = state.audioCtx.createGain();
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.linearRampToValueAtTime(0.20, t + 0.003);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.075);
+  src.buffer = buffer;
+  src.connect(hp).connect(gain).connect(state.audioCtx.destination);
+  src.start(t);
+  src.stop(t + 0.08);
+  flashBeat('clap');
+  pulseBeatButton(el.btnBeatClap, 'active-flash');
 }
 async function prepareMic() {
   if (state.micStream) return;
@@ -1190,13 +1320,30 @@ function hook(){
     try { await onRecordButtonPress('piano', el.btnPianoRec); }
     catch(err){ console.error(err); showToast('PIANO録音を開始できませんでした'); }
   });
-  el.btnDiscPlay.addEventListener('click', async ()=>{
+  el.btnBeatKick.addEventListener('click', async ()=>{
     try{
+      setButtonPressedVisual(el.btnBeatKick);
       await ensureAudio();
-      if (state.discBuffer) startDiscPlayback(currentDiscOffset());
+      playKick();
     }catch(err){ console.error(err); }
   });
-  el.btnDiscStop.addEventListener('click', ()=>stopDiscPlayback());
+  el.btnBeatClap.addEventListener('click', async ()=>{
+    try{
+      setButtonPressedVisual(el.btnBeatClap);
+      await ensureAudio();
+      playClap();
+    }catch(err){ console.error(err); }
+  });
+  el.btnDiscToggle.addEventListener('click', async ()=>{
+    try{
+      setButtonPressedVisual(el.btnDiscToggle);
+      await ensureAudio();
+      if (!state.discBuffer) return;
+      if (state.discPlaying) stopDiscPlayback();
+      else startDiscPlayback(currentDiscOffset());
+      renderStatus();
+    }catch(err){ console.error(err); }
+  });
 
   el.discVol.addEventListener('input', ()=>{
     state.discVol = Number(el.discVol.value) / 100;
