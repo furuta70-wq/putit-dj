@@ -550,6 +550,28 @@ async function ensureAudio(){
   }
   if (state.audioCtx.state !== 'running') await state.audioCtx.resume();
 }
+
+function playStartChime(){
+  if (!state.audioCtx) return;
+  const t = currentTime();
+  const gain = state.audioCtx.createGain();
+  gain.gain.value = 0.08;
+  gain.connect(state.audioCtx.destination);
+
+  const notes = [880, 1320];
+  notes.forEach((freq, i) => {
+    const osc = state.audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, t + i * 0.045);
+    osc.connect(gain);
+    osc.start(t + i * 0.045);
+    osc.stop(t + i * 0.045 + 0.12);
+  });
+
+  setTimeout(() => {
+    try { gain.disconnect(); } catch {}
+  }, 220);
+}
 async function prepareMic() {
   if (state.micStream) return;
   if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) {
@@ -1148,7 +1170,11 @@ function hook(){
       console.error(err);
       el.startBtn.classList.remove('readying');
       el.startBtn.textContent = 'START';
-      showToast('マイク許可を確認してください');
+      if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+        showToast('マイク許可を確認してください');
+      } else {
+        showToast('起動処理でエラーが発生しました');
+      }
     }finally{
       setTimeout(() => {
         el.bootCard.classList.remove('flash');
