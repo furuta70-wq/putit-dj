@@ -997,8 +997,9 @@ function renderStatus() {
   const processing = state.discUiState === UI_STATE.PROCESSING || state.pianoUiState === UI_STATE.PROCESSING;
   const recording = state.discUiState === UI_STATE.RECORDING || state.pianoUiState === UI_STATE.RECORDING;
 
-  el.btnDiscPlay.disabled = !state.discBuffer || processing || recording || waiting;
-  el.btnDiscStop.disabled = !state.discBuffer || processing || recording || waiting;
+  el.btnDiscToggle.disabled = !state.discBuffer || processing || recording || waiting;
+  el.btnDiscToggle.textContent = state.discPlaying ? 'DISC STOP' : 'DISC PLAY';
+  el.btnDiscToggle.classList.toggle('playing', state.discPlaying);
   el.discVol.disabled = processing || recording || waiting;
   el.pianoVol.disabled = processing || recording || waiting;
 
