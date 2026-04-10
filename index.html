@@ -283,6 +283,26 @@ input[type="range"]::-moz-range-thumb{
   background:linear-gradient(180deg,#3b82f6,#2559b7);
   box-shadow:0 12px 28px rgba(37,89,183,.35);
 }
+#start-btn.readying{
+  background:linear-gradient(180deg,#4b8cff,#2f66cf);
+  box-shadow:0 0 0 0 rgba(80,140,255,.45), 0 12px 28px rgba(37,89,183,.35);
+  animation:startPulse 1s ease-in-out infinite;
+}
+#start-btn.started{
+  transform:scale(.985);
+}
+@keyframes startPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(80,140,255,.20), 0 12px 28px rgba(37,89,183,.35)}
+  50%{box-shadow:0 0 0 10px rgba(80,140,255,.08), 0 12px 28px rgba(37,89,183,.35)}
+}
+.boot-card.flash{
+  animation:bootFlash .28s ease-out;
+}
+@keyframes bootFlash{
+  0%{transform:scale(1); box-shadow:0 20px 46px rgba(0,0,0,.36)}
+  35%{transform:scale(1.015); box-shadow:0 24px 54px rgba(40,110,255,.24)}
+  100%{transform:scale(1); box-shadow:0 20px 46px rgba(0,0,0,.36)}
+}
 #toast{
   position:fixed;left:50%;top:14px;transform:translateX(-50%);
   z-index:40;padding:10px 14px;border-radius:999px;
@@ -377,11 +397,10 @@ input[type="range"]::-moz-range-thumb{
 </div>
 
 <div id="boot">
-  <div class="boot-card">
+  <div id="boot-card" class="boot-card">
     <div class="boot-title">QUICK DJ</div>
     <div class="boot-copy">
       <p>ディスクとピアノをそれぞれ録音して、誰でも簡単DJ体験！</p>
-      <p>録音がうまくいかない場合は、ブラウザの設定を見直してください。</p>
     </div>
     <button id="start-btn">START</button>
   </div>
@@ -403,9 +422,9 @@ const WHITE_NOTES = [
   {name:"B", semitone:11},
   {name:"C5", semitone:12},
 ];
-const SCRATCH_SEGMENT_SEC = 0.11;
-const SCRATCH_MIN_DELTA = 0.012;
-const SCRATCH_EMIT_MS = 9;
+const SCRATCH_SEGMENT_SEC = 0.075;
+const SCRATCH_MIN_DELTA = 0.008;
+const SCRATCH_EMIT_MS = 6;
 const PIANO_TRIM_THRESHOLD = 0.018;
 const PIANO_TRIM_MAX_MS = 140;
 const ZERO_CROSS_SEARCH_MS = 18;
@@ -478,6 +497,7 @@ const el = {
   whiteKeys: document.getElementById('white-keys'),
   boot: document.getElementById('boot'),
   startBtn: document.getElementById('start-btn'),
+  bootCard: document.getElementById('boot-card'),
   toast: document.getElementById('toast'),
   busyOverlay: document.getElementById('busy-overlay'),
   busyText: document.getElementById('busy-text')
@@ -1010,17 +1030,20 @@ function emitDiscScrubRaw(posSec, deltaAngle){
   const src = state.audioCtx.createBufferSource();
   const activeBuffer = forward ? state.discBuffer : state.discReverseBuffer;
   src.buffer = activeBuffer;
-  src.playbackRate.value = 1;
 
+  const motion = Math.abs(deltaAngle);
+  src.playbackRate.value = clamp(0.85 + motion * 6.0, 0.85, 2.2);
+
+  let seg = clamp(SCRATCH_SEGMENT_SEC + motion * 0.035, 0.055, 0.105);
   let start;
   if (forward) {
     start = wrap(posSec, state.discBuffer.duration);
-    if (start + SCRATCH_SEGMENT_SEC >= state.discBuffer.duration) {
-      start = Math.max(0, state.discBuffer.duration - SCRATCH_SEGMENT_SEC - 0.001);
+    if (start + seg >= state.discBuffer.duration) {
+      start = Math.max(0, state.discBuffer.duration - seg - 0.001);
     }
   } else {
-    const revPos = wrap(state.discBuffer.duration - posSec - SCRATCH_SEGMENT_SEC, state.discBuffer.duration);
-    start = clamp(revPos, 0, Math.max(0, state.discBuffer.duration - SCRATCH_SEGMENT_SEC - 0.001));
+    const revPos = wrap(state.discBuffer.duration - posSec - seg, state.discBuffer.duration);
+    start = clamp(revPos, 0, Math.max(0, state.discBuffer.duration - seg - 0.001));
   }
 
   const data = activeBuffer.getChannelData(0);
@@ -1028,8 +1051,8 @@ function emitDiscScrubRaw(posSec, deltaAngle){
   const aligned = findNearestZeroCrossing(data, sampleIndex, activeBuffer.sampleRate) / activeBuffer.sampleRate;
 
   src.connect(state.discBus);
-  src.start(currentTime(), aligned, SCRATCH_SEGMENT_SEC);
-  src.stop(currentTime() + SCRATCH_SEGMENT_SEC + 0.005);
+  src.start(currentTime(), aligned, seg);
+  src.stop(currentTime() + seg + 0.004);
 }
 function stopDiscScratchOnly(){
   state.scratching = false;
@@ -1055,7 +1078,7 @@ function onDiscPointerMove(e){
   let delta = normalizeAngleDelta(angle - state.scratchPrevAngle);
   state.scratchPrevAngle = angle;
 
-  delta = clamp(delta, -0.75, 0.75);
+  delta = clamp(delta, -0.9, 0.9);
   if (Math.abs(delta) < SCRATCH_MIN_DELTA) return;
 
   const dur = state.discBuffer.duration;
@@ -1107,13 +1130,30 @@ function buildKeys(){
 function hook(){
   el.startBtn.addEventListener('click', async ()=>{
     try{
+      setButtonPressedVisual(el.startBtn);
+      el.startBtn.classList.add('readying');
+      el.bootCard.classList.add('flash');
+      el.startBtn.textContent = 'STARTING...';
       await ensureAudio();
+      playStartChime();
       await prepareMic();
-      el.boot.style.display = 'none';
+      el.startBtn.classList.remove('readying');
+      el.startBtn.classList.add('started');
+      el.startBtn.textContent = 'READY';
       showToast('マイク準備完了');
+      setTimeout(() => {
+        el.boot.style.display = 'none';
+      }, 180);
     }catch(err){
       console.error(err);
+      el.startBtn.classList.remove('readying');
+      el.startBtn.textContent = 'START';
       showToast('マイク許可を確認してください');
+    }finally{
+      setTimeout(() => {
+        el.bootCard.classList.remove('flash');
+        el.startBtn.classList.remove('started');
+      }, 220);
     }
   });
   el.btnDiscRec.addEventListener('click', async ()=>{
