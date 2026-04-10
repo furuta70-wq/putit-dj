@@ -44,7 +44,7 @@ button,input{font:inherit}
   flex:0 0 66%;
   min-height:0;
   display:grid;
-  grid-template-columns:64fr 36fr;
+  grid-template-columns:65fr 35fr;
   gap:10px;
 }
 #disc-area{
@@ -72,6 +72,20 @@ button,input{font:inherit}
   transform:rotate(0deg);
   will-change:transform;
 }
+#disc-transport{
+  position:absolute;
+  right:18px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:min(26vw, 200px);
+}
+.transport-btn{
+  min-height:56px;
+  font-size:clamp(14px, 2.1vh, 18px);
+}
 .pill{
   position:absolute;
   padding:8px 12px;
@@ -88,9 +102,10 @@ button,input{font:inherit}
 #control-area{
   padding:12px;
   display:grid;
-  grid-template-rows:auto auto auto auto auto 1fr;
+  grid-template-rows:auto auto auto auto auto;
   gap:10px;
   align-content:start;
+  overflow:auto;
 }
 .title{
   font-size:clamp(13px, 1.8vh, 18px);
@@ -108,6 +123,53 @@ button.ctrl{
 }
 button.ctrl:active{transform:translateY(1px)}
 button.ctrl[disabled]{opacity:.45}
+button.ctrl.waiting{
+  background:linear-gradient(180deg, #36404c, #232932);
+  border-color:rgba(255,255,255,.16);
+}
+button.ctrl.processing{
+  background:linear-gradient(180deg, #2f3944, #21262e);
+  border-color:rgba(140,180,255,.24);
+  color:#eef4ff;
+}
+button.ctrl.processing::after,
+button.ctrl.waiting::after{
+  content:'';
+  display:inline-block;
+  width:8px;height:8px;border-radius:50%;
+  margin-left:10px;
+  background:currentColor;
+  opacity:.8;
+  animation:pulseDot .9s ease-in-out infinite;
+  vertical-align:middle;
+}
+@keyframes pulseDot{
+  0%,100%{transform:scale(.7); opacity:.35}
+  50%{transform:scale(1); opacity:1}
+}
+#busy-overlay{
+  position:fixed; inset:0; z-index:25;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(8,10,13,.18);
+  pointer-events:none;
+}
+#busy-overlay.show{ display:flex; }
+.busy-card{
+  padding:12px 16px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(12,16,22,.72);
+  backdrop-filter:blur(12px);
+  display:flex; align-items:center; gap:12px;
+  box-shadow:0 16px 34px rgba(0,0,0,.28);
+}
+.busy-spinner{
+  width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.18);
+  border-top-color:#fff;
+  animation:spin .9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 button.rec.active{
   background:linear-gradient(180deg, #863737, #561f1f);
   border-color:rgba(255,120,120,.28);
@@ -229,17 +291,31 @@ input[type="range"]::-moz-range-thumb{
 }
 #toast.show{opacity:1}
 @media (max-width: 900px){
-  #top{grid-template-columns:61fr 39fr}
-  #control-area{padding:10px}
-  button.ctrl{min-height:50px}
+  #top{grid-template-columns:62fr 38fr}
+  #control-area{padding:10px; gap:8px}
+  button.ctrl{min-height:46px}
   .slider-wrap{padding:8px 10px 10px}
   #disc-area{padding-left:10px}
-  .disc-wrap{width:min(99%, calc(100vh * .53), calc(100vw * .60))}
+  .disc-wrap{width:min(99%, calc(100vh * .50), calc(100vw * .56))}
+  #disc-transport{
+    right:10px;
+    width:min(24vw, 150px);
+    gap:8px;
+  }
+  .transport-btn{
+    min-height:44px;
+    font-size:clamp(12px, 1.8vh, 16px);
+  }
+  .title{
+    font-size:clamp(12px, 1.7vh, 16px);
+  }
 }
 @media (max-height: 520px){
   #app{gap:8px}
   #top{flex-basis:64%}
-  button.ctrl{min-height:46px}
+  button.ctrl{min-height:42px}
+  #disc-transport{gap:6px}
+  .transport-btn{min-height:40px}
 }
 </style>
 </head>
@@ -250,16 +326,16 @@ input[type="range"]::-moz-range-thumb{
       <div class="disc-wrap">
         <div id="disc" aria-label="record"></div>
       </div>
+      <div id="disc-transport">
+        <button id="btn-disc-play" class="ctrl transport-btn">DISC PLAY</button>
+        <button id="btn-disc-stop" class="ctrl transport-btn">DISC STOP</button>
+      </div>
       <div id="disc-status" class="pill"><span class="dot"></span>DISC EMPTY</div>
       <div id="disc-play-state" class="pill">STOPPED</div>
     </div>
     <aside id="control-area" class="panel">
       <div class="title">QUICK DJ</div>
       <button id="btn-disc-rec" class="ctrl rec">DISC REC</button>
-      <div class="row">
-        <button id="btn-disc-play" class="ctrl">DISC PLAY</button>
-        <button id="btn-disc-stop" class="ctrl">DISC STOP</button>
-      </div>
       <div class="slider-wrap">
         <div class="slider-head"><span>DISC VOL</span><span id="disc-vol-value">50%</span></div>
         <input id="disc-vol" type="range" min="0" max="100" value="50">
@@ -279,6 +355,12 @@ input[type="range"]::-moz-range-thumb{
       <div id="white-keys"></div>
     </div>
   </section>
+  <div id="busy-overlay" aria-hidden="true">
+    <div class="busy-card">
+      <div class="busy-spinner"></div>
+      <div id="busy-text">PROCESSING...</div>
+    </div>
+  </div>
 </div>
 
 <div id="boot">
@@ -293,6 +375,7 @@ input[type="range"]::-moz-range-thumb{
 </div>
 
 <div id="toast"></div>
+
 
 <script>
 const DISC_MAX_MS = 10000;
@@ -311,12 +394,23 @@ const SCRATCH_SEGMENT_SEC = 0.11;
 const SCRATCH_MIN_DELTA = 0.012;
 const SCRATCH_EMIT_MS = 9;
 const PIANO_TRIM_THRESHOLD = 0.018;
-const PIANO_TRIM_MAX_MS = 120;
+const PIANO_TRIM_MAX_MS = 140;
+const ZERO_CROSS_SEARCH_MS = 18;
+const RMS_WINDOW_MS = 8;
+const REC_START_TIMEOUT_MS = 1800;
+const REC_STOP_GRACE_MS = 400;
+const UI_STATE = {
+  IDLE: 'idle',
+  WAITING: 'waiting',
+  RECORDING: 'recording',
+  PROCESSING: 'processing',
+  READY: 'ready',
+  ERROR: 'error'
+};
 
 const state = {
   audioCtx: null,
   micStream: null,
-  recordTimer: null,
   activeTarget: null,
   recordStopAt: 0,
 
@@ -344,7 +438,15 @@ const state = {
 
   visualRotation: 0,
   spinRaf: 0,
-  lastSpinTs: 0
+  lastSpinTs: 0,
+
+  discUiState: UI_STATE.IDLE,
+  pianoUiState: UI_STATE.IDLE,
+  discRemainingSec: 0,
+  pianoRemainingSec: 0,
+  activeRecorder: null,
+  activeRecordStopTimer: null,
+  activeRecordTickRaf: 0
 };
 
 const el = {
@@ -363,7 +465,9 @@ const el = {
   whiteKeys: document.getElementById('white-keys'),
   boot: document.getElementById('boot'),
   startBtn: document.getElementById('start-btn'),
-  toast: document.getElementById('toast')
+  toast: document.getElementById('toast'),
+  busyOverlay: document.getElementById('busy-overlay'),
+  busyText: document.getElementById('busy-text')
 };
 
 function showToast(msg){
@@ -384,7 +488,7 @@ function normalizeAngleDelta(d){
 }
 function formatRecButton(target, remainSec){
   const n = Math.max(0, remainSec).toFixed(1);
-  return target === 'disc' ? `DISC REC ${n}` : `PIANO REC ${n}`;
+  return target === 'disc' ? `DISC STOP ${n}` : `PIANO STOP ${n}`;
 }
 function pickMimeType() {
   const candidates = [
@@ -404,7 +508,6 @@ async function ensureAudio(){
   if (!state.audioCtx){
     const Ctx = window.AudioContext || window.webkitAudioContext;
     state.audioCtx = new Ctx({ latencyHint: 'interactive' });
-
     state.discBus = state.audioCtx.createGain();
     state.pianoBus = state.audioCtx.createGain();
     state.discBus.gain.value = state.discVol;
@@ -421,11 +524,22 @@ async function prepareMic() {
   }
   state.micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 }
-function recordOnce(target, maxMs){
+
+function safeStopRecorder(recorder){
+  if (!recorder) return;
+  try {
+    if (recorder.state !== 'inactive') recorder.stop();
+  } catch {}
+}
+function recordOnce(maxMs){
   return new Promise((resolve, reject) => {
     const mimeType = pickMimeType();
     const chunks = [];
     let recorder;
+    let settled = false;
+    let startTimeout = null;
+    let stopTimeout = null;
+
     try {
       recorder = mimeType ? new MediaRecorder(state.micStream, { mimeType }) : new MediaRecorder(state.micStream);
     } catch (e) {
@@ -434,30 +548,68 @@ function recordOnce(target, maxMs){
     }
 
     const cleanup = () => {
+      clearTimeout(startTimeout);
+      clearTimeout(stopTimeout);
+      recorder.onstart = null;
       recorder.ondataavailable = null;
       recorder.onerror = null;
       recorder.onstop = null;
     };
 
+    const finishResolve = (blob) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(blob);
+    };
+
+    const finishReject = (err) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err);
+    };
+
+    recorder.onstart = () => {
+      state.recordStopAt = performance.now() + maxMs;
+      clearTimeout(state.activeRecordStopTimer);
+      state.activeRecordStopTimer = setTimeout(() => {
+        safeStopRecorder(recorder);
+      }, maxMs + 20);
+
+      state.activeRecorder = {
+        recorder,
+        stop: () => safeStopRecorder(recorder)
+      };
+
+      stopTimeout = setTimeout(() => {
+        if (recorder.state !== 'inactive') safeStopRecorder(recorder);
+      }, maxMs + REC_STOP_GRACE_MS);
+    };
+
     recorder.ondataavailable = (e) => {
       if (e.data && e.data.size > 0) chunks.push(e.data);
     };
+
     recorder.onerror = (e) => {
-      cleanup();
-      reject(e.error || new Error('record failed'));
-    };
-    recorder.onstop = () => {
-      cleanup();
-      const type = recorder.mimeType || mimeType || 'audio/webm';
-      resolve(new Blob(chunks, { type }));
+      finishReject(e.error || new Error('record failed'));
     };
 
-    recorder.start();
-    state.recordStopAt = performance.now() + maxMs;
-    clearTimeout(state.recordTimer);
-    state.recordTimer = setTimeout(() => {
-      try { if (recorder.state !== 'inactive') recorder.stop(); } catch {}
-    }, maxMs + 20);
+    recorder.onstop = () => {
+      const type = recorder.mimeType || mimeType || 'audio/webm';
+      finishResolve(new Blob(chunks, { type }));
+    };
+
+    startTimeout = setTimeout(() => {
+      finishReject(new Error('record start timeout'));
+      safeStopRecorder(recorder);
+    }, REC_START_TIMEOUT_MS);
+
+    try {
+      recorder.start(250);
+    } catch (err) {
+      finishReject(err);
+    }
   });
 }
 async function blobToAudioBuffer(blob) {
@@ -483,6 +635,48 @@ function analyzePeak(buffer, startSample = 0){
   }
   return peak;
 }
+
+function findNearestZeroCrossing(data, startIndex, sampleRate, searchMs = ZERO_CROSS_SEARCH_MS){
+  const maxOffset = Math.max(8, Math.floor(sampleRate * searchMs / 1000));
+  let best = startIndex;
+  let bestAbs = Infinity;
+  const from = Math.max(1, startIndex - maxOffset);
+  const to = Math.min(data.length - 2, startIndex + maxOffset);
+
+  for (let i = from; i <= to; i++) {
+    const a = data[i];
+    const b = data[i + 1];
+    if ((a <= 0 && b >= 0) || (a >= 0 && b <= 0)) {
+      return i;
+    }
+    const aa = Math.abs(a);
+    if (aa < bestAbs) {
+      bestAbs = aa;
+      best = i;
+    }
+  }
+  return best;
+}
+
+function detectTransientStartOffset(buffer, threshold = PIANO_TRIM_THRESHOLD, maxMs = PIANO_TRIM_MAX_MS){
+  const data = buffer.getChannelData(0);
+  const maxSamples = Math.min(data.length, Math.floor(buffer.sampleRate * maxMs / 1000));
+  const windowSize = Math.max(8, Math.floor(buffer.sampleRate * RMS_WINDOW_MS / 1000));
+
+  for (let i = 0; i < maxSamples - windowSize; i++) {
+    let sum = 0;
+    for (let j = 0; j < windowSize; j++) {
+      const v = data[i + j];
+      sum += v * v;
+    }
+    const rms = Math.sqrt(sum / windowSize);
+    if (rms >= threshold) {
+      const zc = findNearestZeroCrossing(data, i, buffer.sampleRate);
+      return zc / buffer.sampleRate;
+    }
+  }
+  return 0;
+}
 function normalizeBufferSmart(buffer, targetPeak = 0.84, maxBoost = 3.0, ignoreHeadMs = 0){
   const startSample = Math.min(buffer.length - 1, Math.floor(ignoreHeadMs * buffer.sampleRate / 1000));
   const peak = analyzePeak(buffer, Math.max(0, startSample));
@@ -503,12 +697,32 @@ function makeReverseBuffer(buffer){
   return rev;
 }
 function detectPianoStartOffset(buffer){
-  const data = buffer.getChannelData(0);
-  const maxSamples = Math.min(data.length, Math.floor(buffer.sampleRate * PIANO_TRIM_MAX_MS / 1000));
-  for (let i = 0; i < maxSamples; i++) {
-    if (Math.abs(data[i]) >= PIANO_TRIM_THRESHOLD) return i / buffer.sampleRate;
-  }
-  return 0;
+  return detectTransientStartOffset(buffer, PIANO_TRIM_THRESHOLD, PIANO_TRIM_MAX_MS);
+}
+function setButtonPressedVisual(btn) {
+  btn.style.transform = 'translateY(1px) scale(0.985)';
+  setTimeout(() => { btn.style.transform = ''; }, 120);
+}
+function getUiState(target) {
+  return target === 'disc' ? state.discUiState : state.pianoUiState;
+}
+function setUiState(target, nextState) {
+  if (target === 'disc') state.discUiState = nextState;
+  else state.pianoUiState = nextState;
+  renderRecordButtons();
+  renderStatus();
+}
+
+function setBusyOverlay(text='PROCESSING...'){
+  el.busyText.textContent = text;
+  el.busyOverlay.classList.add('show');
+}
+function clearBusyOverlay(){
+  el.busyOverlay.classList.remove('show');
+}
+function setRemaining(target, sec) {
+  if (target === 'disc') state.discRemainingSec = sec;
+  else state.pianoRemainingSec = sec;
 }
 function resetRecordButtons(){
   el.btnDiscRec.textContent = 'DISC REC';
@@ -516,33 +730,73 @@ function resetRecordButtons(){
   el.btnDiscRec.classList.remove('active');
   el.btnPianoRec.classList.remove('active');
 }
-function updateRecButtons(){
-  resetRecordButtons();
-  if (!state.activeTarget) return;
-  const remainMs = Math.max(0, state.recordStopAt - performance.now());
-  const remainSec = remainMs / 1000;
-  if (state.activeTarget === 'disc') {
-    el.btnDiscRec.textContent = formatRecButton('disc', remainSec);
-    el.btnDiscRec.classList.add('active');
-  } else if (state.activeTarget === 'piano') {
-    el.btnPianoRec.textContent = formatRecButton('piano', remainSec);
-    el.btnPianoRec.classList.add('active');
+function renderOneRecordButton(target, btn) {
+  const uiState = getUiState(target);
+  btn.classList.remove('active', 'waiting', 'processing');
+
+  if (uiState === UI_STATE.IDLE || uiState === UI_STATE.READY) {
+    btn.textContent = target === 'disc' ? 'DISC REC' : 'PIANO REC';
+    return;
+  }
+  if (uiState === UI_STATE.WAITING) {
+    btn.textContent = target === 'disc' ? 'DISC WAIT...' : 'PIANO WAIT...';
+    btn.classList.add('waiting');
+    return;
+  }
+  if (uiState === UI_STATE.RECORDING) {
+    const sec = Math.max(0, target === 'disc' ? state.discRemainingSec : state.pianoRemainingSec);
+    btn.textContent = formatRecButton(target, sec);
+    btn.classList.add('active');
+    return;
+  }
+  if (uiState === UI_STATE.PROCESSING) {
+    btn.textContent = target === 'disc' ? 'DISC PROCESSING...' : 'PIANO PROCESSING...';
+    btn.classList.add('processing');
+    return;
+  }
+  if (uiState === UI_STATE.ERROR) {
+    btn.textContent = target === 'disc' ? 'DISC ERROR' : 'PIANO ERROR';
+    return;
+  }
+}
+function renderRecordButtons() {
+  renderOneRecordButton('disc', el.btnDiscRec);
+  renderOneRecordButton('piano', el.btnPianoRec);
+
+  const discBusy = [UI_STATE.WAITING, UI_STATE.RECORDING, UI_STATE.PROCESSING].includes(state.discUiState);
+  const pianoBusy = [UI_STATE.WAITING, UI_STATE.RECORDING, UI_STATE.PROCESSING].includes(state.pianoUiState);
+
+  if (discBusy) {
+    el.btnPianoRec.disabled = true;
+    el.btnDiscRec.disabled = false;
+  } else if (pianoBusy) {
+    el.btnDiscRec.disabled = true;
+    el.btnPianoRec.disabled = false;
+  } else {
+    el.btnDiscRec.disabled = false;
+    el.btnPianoRec.disabled = false;
   }
 }
 function renderStatus() {
   let discText = 'DISC EMPTY';
   let discDot = '';
-  if (state.activeTarget === 'disc') {
-    discText = 'DISC RECORDING';
-    discDot = 'rec';
+  if (state.discUiState === UI_STATE.WAITING) {
+    discText = 'DISC WAITING'; discDot = 'rec';
+  } else if (state.discUiState === UI_STATE.RECORDING) {
+    discText = 'DISC RECORDING'; discDot = 'rec';
+  } else if (state.discUiState === UI_STATE.PROCESSING) {
+    discText = 'DISC PROCESSING'; discDot = 'rec';
   } else if (state.discBuffer) {
-    discText = 'DISC READY';
-    discDot = 'ok';
+    discText = 'DISC READY'; discDot = 'ok';
   }
   el.discStatus.innerHTML = `<span class="dot ${discDot}"></span>${discText}`;
 
-  if (state.activeTarget === 'piano') {
+  if (state.pianoUiState === UI_STATE.WAITING) {
+    el.pianoStatus.innerHTML = '<span class="dot rec"></span>PIANO WAITING';
+  } else if (state.pianoUiState === UI_STATE.RECORDING) {
     el.pianoStatus.innerHTML = '<span class="dot rec"></span>PIANO RECORDING';
+  } else if (state.pianoUiState === UI_STATE.PROCESSING) {
+    el.pianoStatus.innerHTML = '<span class="dot rec"></span>PIANO PROCESSING';
   } else if (state.pianoBuffer) {
     el.pianoStatus.innerHTML = '<span class="dot ok"></span>PIANO READY';
   } else {
@@ -553,25 +807,62 @@ function renderStatus() {
   else if (state.discPlaying) el.discPlayState.textContent = 'PLAYING';
   else el.discPlayState.textContent = 'STOPPED';
 
-  updateRecButtons();
-  el.btnDiscPlay.disabled = !state.discBuffer || !!state.activeTarget;
-  el.btnDiscStop.disabled = !state.discBuffer || !!state.activeTarget;
-  el.btnDiscRec.disabled = state.activeTarget === 'piano';
-  el.btnPianoRec.disabled = state.activeTarget === 'disc';
+  const waiting = state.discUiState === UI_STATE.WAITING || state.pianoUiState === UI_STATE.WAITING;
+  const processing = state.discUiState === UI_STATE.PROCESSING || state.pianoUiState === UI_STATE.PROCESSING;
+  const recording = state.discUiState === UI_STATE.RECORDING || state.pianoUiState === UI_STATE.RECORDING;
+
+  el.btnDiscPlay.disabled = !state.discBuffer || processing || recording || waiting;
+  el.btnDiscStop.disabled = !state.discBuffer || processing || recording || waiting;
+  el.discVol.disabled = processing || recording || waiting;
+  el.pianoVol.disabled = processing || recording || waiting;
+
+  if (processing) {
+    setBusyOverlay(state.discUiState === UI_STATE.PROCESSING ? 'DISC PROCESSING...' : 'PIANO PROCESSING...');
+  } else if (waiting) {
+    setBusyOverlay(state.discUiState === UI_STATE.WAITING ? 'DISC WAITING...' : 'PIANO WAITING...');
+  } else {
+    clearBusyOverlay();
+  }
 }
-async function startRecording(target) {
+function startRecordCountdown(target, maxMs) {
+  cancelAnimationFrame(state.activeRecordTickRaf);
+  const endAt = performance.now() + maxMs;
+  function tick() {
+    const remainMs = Math.max(0, endAt - performance.now());
+    setRemaining(target, remainMs / 1000);
+    renderRecordButtons();
+    if (remainMs <= 0) return;
+    state.activeRecordTickRaf = requestAnimationFrame(tick);
+  }
+  tick();
+}
+function stopRecordCountdown() {
+  cancelAnimationFrame(state.activeRecordTickRaf);
+  state.activeRecordTickRaf = 0;
+  clearTimeout(state.activeRecordStopTimer);
+  state.activeRecordStopTimer = null;
+}
+async function beginRecordingFlow(target) {
+  if (state.activeTarget && state.activeTarget !== target) return;
   await ensureAudio();
   await prepareMic();
 
   if (target === 'disc') stopDiscPlayback();
   stopDiscScratchOnly();
 
-  state.activeTarget = target;
-  renderStatus();
-
+  setUiState(target, UI_STATE.WAITING);
   const maxMs = target === 'disc' ? DISC_MAX_MS : PIANO_MAX_MS;
+  const recordingPromise = recordOnce(maxMs);
+
+  // MediaRecorder.onstart will arm the actual timers. We still show immediate feedback.
+  setUiState(target, UI_STATE.RECORDING);
+  startRecordCountdown(target, maxMs);
+
   try {
-    const blob = await recordOnce(target, maxMs);
+    const blob = await recordingPromise;
+    stopRecordCountdown();
+    setUiState(target, UI_STATE.PROCESSING);
+
     if (!blob.size) throw new Error('録音データが空でした。');
     let buffer = await blobToAudioBuffer(blob);
     buffer = toMonoBuffer(buffer);
@@ -584,25 +875,47 @@ async function startRecording(target) {
       state.scratchPos = 0;
       state.visualRotation = 0;
       applyDiscRotation();
+      setUiState('disc', UI_STATE.READY);
+      showToast('DISC READY');
     } else {
       state.pianoStartOffset = detectPianoStartOffset(buffer);
-      buffer = normalizeBufferSmart(buffer, 0.90, 2.0, 30);
+      buffer = normalizeBufferSmart(buffer, 0.92, 1.8, 50);
       state.pianoBuffer = buffer;
+      setUiState('piano', UI_STATE.READY);
+      showToast('PIANO READY');
     }
   } catch (err) {
     console.error(err);
-    showToast('録音データの変換に失敗しました');
+    setUiState(target, UI_STATE.ERROR);
+    showToast(target === 'disc' ? 'DISC ERROR' : 'PIANO ERROR');
+    setTimeout(() => {
+      const hasBuffer = target === 'disc' ? !!state.discBuffer : !!state.pianoBuffer;
+      setUiState(target, hasBuffer ? UI_STATE.READY : UI_STATE.IDLE);
+    }, 1200);
   } finally {
-    clearTimeout(state.recordTimer);
-    state.recordTimer = null;
+    state.activeRecorder = null;
     state.activeTarget = null;
+    stopRecordCountdown();
+    renderRecordButtons();
     renderStatus();
   }
 }
-function stopRecording(){ clearTimeout(state.recordTimer); state.recordTimer = null; }
+async function onRecordButtonPress(target, btn) {
+  setButtonPressedVisual(btn);
+  const current = getUiState(target);
+
+  if (current === UI_STATE.RECORDING) {
+    if (state.activeRecorder?.stop) state.activeRecorder.stop();
+    return;
+  }
+  if (current === UI_STATE.WAITING || current === UI_STATE.PROCESSING) return;
+  if (state.activeTarget && state.activeTarget !== target) return;
+
+  state.activeTarget = target;
+  await beginRecordingFlow(target);
+}
 
 function currentTime(){ return state.audioCtx ? state.audioCtx.currentTime : 0; }
-
 function createDiscLoopSource(offset=0){
   if (!state.discBuffer) return null;
   const src = state.audioCtx.createBufferSource();
@@ -673,7 +986,6 @@ function getAngleFromPointer(e){
   const cy = rect.top + rect.height / 2;
   return Math.atan2(e.clientY - cy, e.clientX - cx);
 }
-
 function emitDiscScrubRaw(posSec, deltaAngle){
   if (!state.discBuffer || !state.discReverseBuffer) return;
   const nowMs = performance.now();
@@ -682,7 +994,8 @@ function emitDiscScrubRaw(posSec, deltaAngle){
 
   const forward = deltaAngle >= 0;
   const src = state.audioCtx.createBufferSource();
-  src.buffer = forward ? state.discBuffer : state.discReverseBuffer;
+  const activeBuffer = forward ? state.discBuffer : state.discReverseBuffer;
+  src.buffer = activeBuffer;
   src.playbackRate.value = 1;
 
   let start;
@@ -696,16 +1009,18 @@ function emitDiscScrubRaw(posSec, deltaAngle){
     start = clamp(revPos, 0, Math.max(0, state.discBuffer.duration - SCRATCH_SEGMENT_SEC - 0.001));
   }
 
+  const data = activeBuffer.getChannelData(0);
+  const sampleIndex = Math.min(data.length - 2, Math.max(1, Math.floor(start * activeBuffer.sampleRate)));
+  const aligned = findNearestZeroCrossing(data, sampleIndex, activeBuffer.sampleRate) / activeBuffer.sampleRate;
+
   src.connect(state.discBus);
-  src.start(currentTime(), start, SCRATCH_SEGMENT_SEC);
+  src.start(currentTime(), aligned, SCRATCH_SEGMENT_SEC);
   src.stop(currentTime() + SCRATCH_SEGMENT_SEC + 0.005);
 }
-
 function stopDiscScratchOnly(){
   state.scratching = false;
   state.scratchPointerId = null;
 }
-
 function onDiscPointerDown(e){
   if (!state.discBuffer) return;
   e.preventDefault();
@@ -750,7 +1065,6 @@ function onDiscPointerEnd(e){
     renderStatus();
   }
 }
-
 function semitoneRate(semi){ return Math.pow(2, semi / 12); }
 function playPiano(semi){
   if (!state.pianoBuffer || !state.audioCtx) return;
@@ -788,14 +1102,14 @@ function hook(){
       showToast('マイク許可を確認してください');
     }
   });
-
   el.btnDiscRec.addEventListener('click', async ()=>{
-    try{ await startRecording('disc'); }catch(err){ console.error(err); showToast('DISC録音を開始できませんでした'); }
+    try { await onRecordButtonPress('disc', el.btnDiscRec); }
+    catch(err){ console.error(err); showToast('DISC録音を開始できませんでした'); }
   });
   el.btnPianoRec.addEventListener('click', async ()=>{
-    try{ await startRecording('piano'); }catch(err){ console.error(err); showToast('PIANO録音を開始できませんでした'); }
+    try { await onRecordButtonPress('piano', el.btnPianoRec); }
+    catch(err){ console.error(err); showToast('PIANO録音を開始できませんでした'); }
   });
-
   el.btnDiscPlay.addEventListener('click', async ()=>{
     try{
       await ensureAudio();
@@ -820,13 +1134,13 @@ function hook(){
   window.addEventListener('pointerup', onDiscPointerEnd);
   window.addEventListener('pointercancel', onDiscPointerEnd);
 
-  window.addEventListener('blur', ()=>{
-    stopDiscScratchOnly();
-  });
+  window.addEventListener('blur', ()=>{ stopDiscScratchOnly(); });
 }
 buildKeys();
-hook();
+renderRecordButtons();
 renderStatus();
+hook();
+</script>
 </script>
 </body>
 </html>
