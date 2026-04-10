@@ -454,9 +454,9 @@ input[type="range"]::-moz-range-thumb{
       </div>
     </aside>
     <aside id="perform-area" class="panel">
+      <button id="btn-disc-toggle" class="ctrl transport-btn toggle-btn">DISC PLAY</button>
       <button id="btn-beat-kick" class="ctrl transport-btn beat-btn beat-kick">KICK</button>
       <button id="btn-beat-clap" class="ctrl transport-btn beat-btn beat-clap">CLAP</button>
-      <button id="btn-disc-toggle" class="ctrl transport-btn toggle-btn">DISC PLAY</button>
     </aside>
   </section>
 
@@ -557,7 +557,8 @@ const state = {
   pianoRemainingSec: 0,
   activeRecorder: null,
   activeRecordStopTimer: null,
-  activeRecordTickRaf: 0
+  activeRecordTickRaf: 0,
+  activePianoVoices: new Map()
 };
 
 const el = {
@@ -1257,10 +1258,25 @@ function onDiscPointerEnd(e){
 function semitoneRate(semi){ return Math.pow(2, semi / 12); }
 function playPiano(semi){
   if (!state.pianoBuffer || !state.audioCtx) return;
+
+  const existing = state.activePianoVoices.get(semi);
+  if (existing) {
+    try { existing.stop(); } catch {}
+    try { existing.disconnect(); } catch {}
+    state.activePianoVoices.delete(semi);
+  }
+
   const src = state.audioCtx.createBufferSource();
   src.buffer = state.pianoBuffer;
   src.playbackRate.value = semitoneRate(semi);
   src.connect(state.pianoBus);
+
+  src.onended = () => {
+    const current = state.activePianoVoices.get(semi);
+    if (current === src) state.activePianoVoices.delete(semi);
+  };
+
+  state.activePianoVoices.set(semi, src);
   src.start(currentTime(), state.pianoStartOffset);
 }
 function buildKeys(){
