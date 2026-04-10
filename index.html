@@ -44,7 +44,7 @@ button,input{font:inherit}
   flex:0 0 66%;
   min-height:0;
   display:grid;
-  grid-template-columns:50fr 25fr 25fr;
+  grid-template-columns:minmax(0,1.45fr) minmax(220px,.72fr) minmax(160px,.56fr);
   gap:10px;
 }
 #disc-area{
@@ -72,52 +72,55 @@ button,input{font:inherit}
   transform:rotate(0deg);
   will-change:transform;
 }
-#disc-transport{
-  position:absolute;
-  right:14px;
-  top:50%;
-  transform:translateY(-50%);
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  width:min(24vw, 180px);
+#perform-area{
+  padding:12px;
+  display:grid;
+  grid-template-rows:1fr 1fr 1fr;
+  gap:10px;
+  align-content:stretch;
 }
-.transport-btn{
-  min-height:54px;
-  font-size:clamp(13px, 1.9vh, 17px);
+#perform-area .transport-btn{
+  min-height:58px;
+  width:100%;
 }
 .beat-btn,
 .toggle-btn{
-  border-radius:999px;
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255,255,255,.14), transparent 35%),
-    linear-gradient(180deg, #3a4450, #20262e);
+  border-radius:22px;
+  letter-spacing:.08em;
   border:1px solid rgba(255,255,255,.14);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.08),
     0 10px 22px rgba(0,0,0,.26);
-  letter-spacing:.08em;
+  position:relative;
+  overflow:hidden;
 }
-.beat-btn{
-  min-height:46px;
-  font-size:clamp(12px, 1.8vh, 15px);
+.beat-btn::after,
+.toggle-btn::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at 24% 18%, rgba(255,255,255,.14), transparent 32%);
+  pointer-events:none;
+}
+.beat-kick{
+  background:linear-gradient(180deg, #59453f, #302622);
+  border-color:rgba(255,176,115,.24);
 }
 .beat-kick.active-flash{
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255,255,255,.12), transparent 35%),
-    linear-gradient(180deg, #72513f, #3b2a23);
-  border-color:rgba(255,180,100,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 0 0 1px rgba(255,176,115,.20), 0 0 24px rgba(255,160,90,.22);
+}
+.beat-clap{
+  background:linear-gradient(180deg, #40506a, #243247);
+  border-color:rgba(144,200,255,.24);
 }
 .beat-clap.active-flash{
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255,255,255,.12), transparent 35%),
-    linear-gradient(180deg, #40557a, #223049);
-  border-color:rgba(130,200,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 0 0 1px rgba(144,200,255,.20), 0 0 24px rgba(110,170,255,.22);
+}
+.toggle-btn{
+  background:linear-gradient(180deg, #3a4450, #20262e);
 }
 .toggle-btn.playing{
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255,255,255,.12), transparent 35%),
-    linear-gradient(180deg, #486a52, #23352a);
+  background:linear-gradient(180deg, #486a52, #23352a);
   border-color:rgba(125,224,161,.28);
 }
 .toggle-btn::before{
@@ -130,6 +133,8 @@ button,input{font:inherit}
   margin-right:10px;
   vertical-align:middle;
   box-shadow:0 0 0 0 rgba(255,255,255,.0);
+  position:relative;
+  z-index:1;
 }
 .toggle-btn.playing::before{
   background:#7de0a1;
@@ -391,7 +396,7 @@ input[type="range"]::-moz-range-thumb{
 }
 #toast.show{opacity:1}
 @media (max-width: 900px){
-  #top{grid-template-columns:49fr 24fr 27fr}
+  #top{grid-template-columns:minmax(0,1.2fr) minmax(180px,.62fr) minmax(136px,.42fr)}
   #control-area{padding:8px; gap:6px}
   #perform-area{padding:8px; gap:8px}
   button.ctrl{min-height:42px; border-radius:14px}
@@ -404,19 +409,9 @@ input[type="range"]::-moz-range-thumb{
   input[type="range"]::-moz-range-thumb{width:18px;height:18px}
   #disc-area{padding-left:10px}
   .disc-wrap{width:min(99%, calc(100vh * .47), calc(100vw * .50))}
-  #perform-area .transport-btn{
-    min-height:40px;
-    font-size:clamp(10px, 1.5vh, 13px);
-  }
-  .beat-btn{min-height:40px}
-  .title{
-    font-size:clamp(11px, 1.45vh, 14px);
-  }
-  #piano-status,#disc-status{
-    min-width:132px;
-    padding:7px 11px;
-    font-size:clamp(10px,1.4vh,14px);
-  }
+  #perform-area .transport-btn{min-height:40px; font-size:clamp(10px, 1.5vh, 13px)}
+  .title{font-size:clamp(11px, 1.45vh, 14px)}
+  #piano-status,#disc-status{min-width:132px; padding:7px 11px; font-size:clamp(10px,1.4vh,14px)}
 }
 @media (max-height: 520px){
   #app{gap:8px}
@@ -443,11 +438,6 @@ input[type="range"]::-moz-range-thumb{
       <div class="disc-wrap">
         <div id="disc" aria-label="record"></div>
       </div>
-      <div id="disc-transport">
-        <button id="btn-beat-kick" class="ctrl transport-btn beat-btn beat-kick">KICK</button>
-        <button id="btn-beat-clap" class="ctrl transport-btn beat-btn beat-clap">CLAP</button>
-        <button id="btn-disc-toggle" class="ctrl transport-btn toggle-btn">DISC PLAY</button>
-      </div>
       <div id="disc-status" class="pill"><span class="dot"></span>DISC EMPTY</div>
     </div>
     <aside id="control-area" class="panel">
@@ -462,6 +452,11 @@ input[type="range"]::-moz-range-thumb{
         <div class="slider-head"><span>PIANO VOL</span><span id="piano-vol-value">50%</span></div>
         <input id="piano-vol" type="range" min="0" max="100" value="50">
       </div>
+    </aside>
+    <aside id="perform-area" class="panel">
+      <button id="btn-beat-kick" class="ctrl transport-btn beat-btn beat-kick">KICK</button>
+      <button id="btn-beat-clap" class="ctrl transport-btn beat-btn beat-clap">CLAP</button>
+      <button id="btn-disc-toggle" class="ctrl transport-btn toggle-btn">DISC PLAY</button>
     </aside>
   </section>
 
