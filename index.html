@@ -44,7 +44,7 @@ button,input{font:inherit}
   flex:0 0 66%;
   min-height:0;
   display:grid;
-  grid-template-columns:65fr 35fr;
+  grid-template-columns:50fr 25fr 25fr;
   gap:10px;
 }
 #disc-area{
@@ -183,10 +183,17 @@ button,input{font:inherit}
 #control-area{
   padding:10px;
   display:grid;
-  grid-template-rows:auto auto auto auto;
+  grid-template-rows:auto auto auto auto auto;
   gap:8px;
-  align-content:start;
-  overflow:auto;
+  align-content:center;
+  justify-content:stretch;
+}
+#perform-area{
+  padding:12px;
+  display:grid;
+  grid-template-rows:1fr 1fr 1fr;
+  gap:10px;
+  align-content:center;
 }
 .title{
   font-size:clamp(13px, 1.8vh, 18px);
@@ -384,8 +391,9 @@ input[type="range"]::-moz-range-thumb{
 }
 #toast.show{opacity:1}
 @media (max-width: 900px){
-  #top{grid-template-columns:63fr 37fr}
+  #top{grid-template-columns:49fr 24fr 27fr}
   #control-area{padding:8px; gap:6px}
+  #perform-area{padding:8px; gap:8px}
   button.ctrl{min-height:42px; border-radius:14px}
   .slider-wrap{padding:5px 7px 6px; border-radius:13px}
   .slider-head{margin-bottom:3px; font-size:clamp(9px, 1.2vh, 12px)}
@@ -395,18 +403,19 @@ input[type="range"]::-moz-range-thumb{
   input[type="range"]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-6.5px}
   input[type="range"]::-moz-range-thumb{width:18px;height:18px}
   #disc-area{padding-left:10px}
-  .disc-wrap{width:min(99%, calc(100vh * .48), calc(100vw * .54))}
-  #disc-transport{
-    right:8px;
-    width:min(22vw, 136px);
-    gap:6px;
+  .disc-wrap{width:min(99%, calc(100vh * .47), calc(100vw * .50))}
+  #perform-area .transport-btn{
+    min-height:40px;
+    font-size:clamp(10px, 1.5vh, 13px);
   }
-  .transport-btn{
-    min-height:42px;
-    font-size:clamp(11px, 1.6vh, 14px);
-  }
+  .beat-btn{min-height:40px}
   .title{
     font-size:clamp(11px, 1.45vh, 14px);
+  }
+  #piano-status,#disc-status{
+    min-width:132px;
+    padding:7px 11px;
+    font-size:clamp(10px,1.4vh,14px);
   }
 }
 @media (max-height: 520px){
@@ -414,6 +423,7 @@ input[type="range"]::-moz-range-thumb{
   #top{flex-basis:64%}
   button.ctrl{min-height:38px}
   #control-area{padding:7px; gap:5px}
+  #perform-area{padding:7px; gap:6px}
   .slider-wrap{padding:4px 6px 5px}
   .slider-head{margin-bottom:2px; font-size:11px}
   input[type="range"]{height:18px}
@@ -421,8 +431,8 @@ input[type="range"]::-moz-range-thumb{
   input[type="range"]::-moz-range-track{height:4px}
   input[type="range"]::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
   input[type="range"]::-moz-range-thumb{width:16px;height:16px}
-  #disc-transport{gap:5px}
-  .transport-btn{min-height:38px; font-size:12px}
+  #perform-area .transport-btn{min-height:38px; font-size:12px}
+  #piano-status,#disc-status{padding:7px 11px}
 }
 </style>
 </head>
@@ -439,7 +449,6 @@ input[type="range"]::-moz-range-thumb{
         <button id="btn-disc-toggle" class="ctrl transport-btn toggle-btn">DISC PLAY</button>
       </div>
       <div id="disc-status" class="pill"><span class="dot"></span>DISC EMPTY</div>
-      <div id="disc-play-state" class="pill">STOPPED</div>
     </div>
     <aside id="control-area" class="panel">
       <div class="title">QUICK DJ</div>
@@ -559,7 +568,6 @@ const state = {
 const el = {
   disc: document.getElementById('disc'),
   discStatus: document.getElementById('disc-status'),
-  discPlayState: document.getElementById('disc-play-state'),
   pianoStatus: document.getElementById('piano-status'),
   btnDiscRec: document.getElementById('btn-disc-rec'),
   btnBeatKick: document.getElementById('btn-beat-kick'),
@@ -568,7 +576,7 @@ const el = {
   btnPianoRec: document.getElementById('btn-piano-rec'),
   discVol: document.getElementById('disc-vol'),
   discVolValue: document.getElementById('disc-vol-value'),
-  pianoVol: document.getElementById('piano-vol'),
+  pianoVol: document.getElementById('btn-piano-vol'),
   pianoVolValue: document.getElementById('piano-vol-value'),
   whiteKeys: document.getElementById('white-keys'),
   boot: document.getElementById('boot'),
@@ -986,12 +994,8 @@ function renderStatus() {
   } else if (state.pianoBuffer) {
     el.pianoStatus.innerHTML = '<span class="dot ok"></span>PIANO READY';
   } else {
-    el.pianoStatus.textContent = 'PIANO EMPTY';
+    el.pianoStatus.innerHTML = '<span class="dot"></span>PIANO EMPTY';
   }
-
-  if (state.scratching) el.discPlayState.textContent = 'SCRATCH';
-  else if (state.discPlaying) el.discPlayState.textContent = 'PLAYING';
-  else el.discPlayState.textContent = 'STOPPED';
 
   const waiting = state.discUiState === UI_STATE.WAITING || state.pianoUiState === UI_STATE.WAITING;
   const processing = state.discUiState === UI_STATE.PROCESSING || state.pianoUiState === UI_STATE.PROCESSING;
