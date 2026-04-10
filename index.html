@@ -82,6 +82,7 @@ button,input{font:inherit}
 #perform-area .transport-btn{
   min-height:58px;
   width:100%;
+  touch-action:manipulation;
 }
 .beat-btn,
 .toggle-btn{
@@ -332,6 +333,7 @@ input[type="range"]::-moz-range-thumb{
 }
 .white-key{
   --key-glow:#59D8FF;
+  touch-action:manipulation;
   border:none;
   border-radius:0 0 10px 10px;
   background:linear-gradient(180deg,#ffffff 0%,#f2f4f6 62%,#dce2e8 100%);
@@ -1364,22 +1366,25 @@ function hook(){
     try { await onRecordButtonPress('piano', el.btnPianoRec); }
     catch(err){ console.error(err); showToast('PIANO録音を開始できませんでした'); }
   });
-  el.btnBeatKick.addEventListener('click', async ()=>{
+  el.btnBeatKick.addEventListener('pointerdown', async (e)=>{
     try{
+      e.preventDefault();
       setButtonPressedVisual(el.btnBeatKick);
       await ensureAudio();
       playKick();
     }catch(err){ console.error(err); }
   });
-  el.btnBeatClap.addEventListener('click', async ()=>{
+  el.btnBeatClap.addEventListener('pointerdown', async (e)=>{
     try{
+      e.preventDefault();
       setButtonPressedVisual(el.btnBeatClap);
       await ensureAudio();
       playClap();
     }catch(err){ console.error(err); }
   });
-  el.btnDiscToggle.addEventListener('click', async ()=>{
+  el.btnDiscToggle.addEventListener('pointerdown', async (e)=>{
     try{
+      e.preventDefault();
       setButtonPressedVisual(el.btnDiscToggle);
       await ensureAudio();
       if (!state.discBuffer) return;
